@@ -319,8 +319,8 @@ const HospitalPatientRequest = () => {
                   {request.status === 'requesting' && (
                     <Button
                       size="sm"
-                      variant="success"
-                      className="w-full"
+                      variant="default"
+                      className="w-full bg-success text-success-foreground hover:bg-success/90"
                       onClick={() => markAsReceived(request.id)}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
