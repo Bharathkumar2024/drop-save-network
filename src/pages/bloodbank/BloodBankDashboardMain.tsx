@@ -4,7 +4,7 @@ import BloodBankLayout from '@/components/bloodbank/BloodBankLayout';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { mockBloodBanks } from '@/data/mockData';
-import { ChevronLeft, ChevronRight, Award, Building2, Calendar, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Award, Building2, Calendar, TrendingUp, Droplet, Package, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const BloodBankDashboardMain = () => {
@@ -19,28 +19,28 @@ const BloodBankDashboardMain = () => {
     {
       id: 1,
       title: 'Bank Owner Introduction',
-      content: `Welcome! I'm ${bloodBank.ownerName}, the owner of ${bloodBank.name}. We are committed to saving lives through efficient blood management and distribution. Our facility is equipped with state-of-the-art preservation technology and staffed by dedicated professionals.`,
-      icon: <Building2 className="h-12 w-12 text-red-500" />,
+      content: `Welcome! I'm ${bloodBank.ownerName}, the owner of ${bloodBank.name}. We are committed to saving lives through efficient blood management and distribution.`,
+      icon: <Building2 className="h-8 w-8 text-primary" />,
     },
     {
       id: 2,
       title: 'Blood Distribution Records',
-      content: `We have successfully distributed ${bloodBank.sendRecords.reduce((sum, record) => sum + record.unitsSent, 0)} units of blood to hospitals in need. Our success rate stands at ${bloodBank.successRate}%, ensuring timely and safe delivery of life-saving blood products.`,
-      icon: <TrendingUp className="h-12 w-12 text-green-500" />,
+      content: `We have successfully distributed ${bloodBank.sendRecords.reduce((sum, record) => sum + record.unitsSent, 0)} units of blood to hospitals in need. Our success rate stands at ${bloodBank.successRate}%.`,
+      icon: <TrendingUp className="h-8 w-8 text-success" />,
     },
     {
       id: 3,
       title: 'Blood Camp Information',
-      content: 'Blood camps are conducted every month on the 1st and 2nd Saturdays. Camp locations will be announced later. Please help us by donating blood and saving lives. Your contribution makes a difference!',
-      icon: <Calendar className="h-12 w-12 text-blue-500" />,
+      content: 'Blood camps are conducted every month on the 1st and 2nd Saturdays. Camp locations will be announced. Your contribution makes a difference!',
+      icon: <Calendar className="h-8 w-8 text-accent" />,
     },
   ];
 
-  // Auto-advance carousel every 2 seconds
+  // Auto-advance carousel every 4 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 2000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
@@ -75,39 +75,83 @@ const BloodBankDashboardMain = () => {
     <BloodBankLayout>
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-glow mb-2">
-          Welcome to {bloodBank.name}
-        </h1>
-        <p className="text-muted-foreground">
-          {bloodBank.location} • Managed by {bloodBank.ownerName}
-        </p>
-        <Badge className="mt-2 bg-green-500">
-          <Award className="h-3 w-3 mr-1" />
-          Reputation Score: {bloodBank.reputationScore}
-        </Badge>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+              Welcome to {bloodBank.name}
+            </h1>
+            <p className="text-muted-foreground">
+              {bloodBank.location} • Managed by {bloodBank.ownerName}
+            </p>
+          </div>
+          <Badge className="w-fit bg-success/10 text-success border-success/20 px-4 py-2">
+            <Award className="h-4 w-4 mr-2" />
+            Reputation: {bloodBank.reputationScore}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="p-6 hover-lift">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Package className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Stock</p>
+              <p className="text-3xl font-bold text-foreground">{totalStock} units</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 hover-lift">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-success/10 rounded-2xl flex items-center justify-center">
+              <TrendingUp className="h-7 w-7 text-success" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Success Rate</p>
+              <p className="text-3xl font-bold text-foreground">{bloodBank.successRate}%</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 hover-lift">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center">
+              <Users className="h-7 w-7 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Active Donors</p>
+              <p className="text-3xl font-bold text-foreground">245</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Achievements Carousel */}
-      <Card className="glass-card p-6 mb-8 relative overflow-hidden">
-        <h2 className="text-xl font-bold mb-4 text-glow">Achievements & Information</h2>
+      <Card className="card-royal p-6 mb-8">
+        <h2 className="text-xl font-bold text-foreground mb-6">Achievements & Information</h2>
 
-        <div className="relative min-h-[200px]">
+        <div className="relative min-h-[180px]">
           {slides.map((slide, index) => (
             <div
               key={slide.id}
-              className={`absolute inset-0 transition-all duration-500 ${index === currentSlide
-                ? 'opacity-100 translate-x-0'
-                : index < currentSlide
-                  ? 'opacity-0 -translate-x-full'
-                  : 'opacity-0 translate-x-full'
-                }`}
+              className={`absolute inset-0 transition-all duration-500 ${
+                index === currentSlide
+                  ? 'opacity-100 translate-x-0'
+                  : index < currentSlide
+                    ? 'opacity-0 -translate-x-full'
+                    : 'opacity-0 translate-x-full'
+              }`}
             >
               <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="flex-shrink-0 w-24 h-24 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center border-2 border-red-500/30">
+                <div className="flex-shrink-0 w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center border border-border">
                   {slide.icon}
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2 text-glow">{slide.title}</h3>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{slide.title}</h3>
                   <p className="text-muted-foreground leading-relaxed">{slide.content}</p>
                 </div>
               </div>
@@ -116,12 +160,12 @@ const BloodBankDashboardMain = () => {
         </div>
 
         {/* Carousel Controls */}
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
           <Button
             variant="outline"
             size="sm"
             onClick={handlePrevSlide}
-            className="hover:bg-red-500/20"
+            className="hover:bg-primary/10"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -131,10 +175,11 @@ const BloodBankDashboardMain = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-2 h-2 rounded-full transition-all ${index === currentSlide
-                  ? 'bg-red-500 w-8'
-                  : 'bg-red-500/30 hover:bg-red-500/50'
-                  }`}
+                className={`h-2 rounded-full transition-all ${
+                  index === currentSlide
+                    ? 'bg-primary w-8'
+                    : 'bg-border w-2 hover:bg-primary/50'
+                }`}
               />
             ))}
           </div>
@@ -143,7 +188,7 @@ const BloodBankDashboardMain = () => {
             variant="outline"
             size="sm"
             onClick={handleNextSlide}
-            className="hover:bg-red-500/20"
+            className="hover:bg-primary/10"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -151,49 +196,49 @@ const BloodBankDashboardMain = () => {
       </Card>
 
       {/* Blood Bank Records - Ring Format */}
-      <Card className="glass-card p-6">
-        <h2 className="text-xl font-bold mb-6 text-glow">Blood Bank Records</h2>
+      <Card className="card-royal p-6">
+        <h2 className="text-xl font-bold text-foreground mb-6">Blood Inventory by Type</h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {bloodGroupStats.map((stat) => (
             <div key={stat.type} className="flex flex-col items-center">
               {/* Ring Visualization */}
-              <div className="relative w-32 h-32">
-                <svg className="w-32 h-32 transform -rotate-90">
+              <div className="relative w-28 h-28 md:w-32 md:h-32">
+                <svg className="w-full h-full transform -rotate-90">
                   {/* Background circle */}
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
+                    cx="50%"
+                    cy="50%"
+                    r="45%"
                     stroke="currentColor"
-                    strokeWidth="12"
+                    strokeWidth="10"
                     fill="none"
-                    className="text-red-500/20"
+                    className="text-secondary"
                   />
                   {/* Progress circle */}
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
+                    cx="50%"
+                    cy="50%"
+                    r="45%"
                     stroke="currentColor"
-                    strokeWidth="12"
+                    strokeWidth="10"
                     fill="none"
-                    strokeDasharray={`${2 * Math.PI * 56}`}
-                    strokeDashoffset={`${2 * Math.PI * 56 * (1 - stat.percentage / 100)}`}
-                    className="text-red-500 transition-all duration-500"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - stat.percentage / 100)}`}
+                    className="text-primary transition-all duration-500"
                     strokeLinecap="round"
                   />
                 </svg>
                 {/* Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-glow">{stat.units}</span>
+                  <span className="text-2xl font-bold text-foreground">{stat.units}</span>
                   <span className="text-xs text-muted-foreground">units</span>
                 </div>
               </div>
 
               {/* Blood type label */}
               <div className="mt-3 text-center">
-                <Badge variant="destructive" className="text-sm">
+                <Badge className="bg-primary text-white text-sm px-3 py-1">
                   {stat.type}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-1">
