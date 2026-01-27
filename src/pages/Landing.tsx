@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Building2, Droplet, Building } from 'lucide-react';
+import { Building2, Droplet, Building, User } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import heroBackground from '@/assets/hero-background.jpg';
 
@@ -30,17 +30,25 @@ const Landing = () => {
       icon: Building,
       path: '/bloodbank/auth',
       gradient: 'from-orange-600 to-red-700'
+    },
+    {
+      id: 'patient',
+      title: '🤒 Patients',
+      description: 'Request blood and connect with nearby blood banks',
+      icon: User,
+      path: '/patient/auth',
+      gradient: 'from-red-600 to-red-800'
     }
   ];
 
   return (
     <div className="min-h-screen w-full bg-background bg-blood-pattern relative overflow-hidden">
       {/* Hero Background Image */}
-      <div 
+      <div
         className="absolute inset-0 opacity-30 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBackground})` }}
       />
-      
+
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float" />
@@ -52,7 +60,7 @@ const Landing = () => {
         {/* Header */}
         <header className="text-center mb-12 md:mb-16 animate-slide-in-up">
           <h1 className="text-5xl md:text-7xl font-bold mb-4 text-glow-strong animate-blink">
-            Vital Drop
+            Drop Save
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             Connecting hospitals, donors, and blood banks to save lives in real time
@@ -65,7 +73,7 @@ const Landing = () => {
         </header>
 
         {/* Access Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto mb-12">
           {accessCards.map((card, index) => {
             const Icon = card.icon;
             return (
@@ -137,10 +145,10 @@ const Landing = () => {
 
         {/* Footer */}
         <footer className="text-center mt-12 text-sm text-muted-foreground">
-          <p>© 2025 Vital Drop - Blood Donation Crisis Management Platform</p>
+          <p>© 2025 Drop Save - Blood Donation Crisis Management Platform | Human Support Available 24/7</p>
         </footer>
       </div>
-    </div>
+    </div >
   );
 };
 

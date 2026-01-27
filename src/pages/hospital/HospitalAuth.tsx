@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,61 +8,136 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { mockHospitals } from '@/data/mockData';
+import { authAPI } from '@/lib/api';
 
 const HospitalAuth = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
-  // Login state
+
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
-  // Signup state
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+
   const [signupName, setSignupName] = useState('');
   const [signupLocation, setSignupLocation] = useState('');
   const [signupId, setSignupId] = useState('');
-  const [signupVerification, setSignupVerification] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [isSignupLoading, setIsSignupLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Mock validation
-    const hospital = mockHospitals.find(h => h.hospitalId === loginId);
-    if (hospital && loginPassword) {
-      login({
-        id: hospital.id,
-        name: hospital.name,
-        role: 'hospital',
-        hospitalId: hospital.hospitalId,
-        location: hospital.location
-      });
-      toast.success('Login successful!');
-      navigate('/hospital/dashboard');
+  const resetLoginForm = () => {
+    setLoginId('');
+    setLoginPassword('');
+    setIsLoginLoading(false);
+  };
+
+  const resetSignupForm = () => {
+    setSignupName('');
+    setSignupLocation('');
+    setSignupId('');
+    setSignupEmail('');
+    setSignupPhone('');
+    setSignupPassword('');
+    setIsSignupLoading(false);
+  };
+
+  const handleTabChange = (value: 'login' | 'signup') => {
+    setActiveTab(value);
+    if (value === 'login') {
+      resetSignupForm();
     } else {
-      toast.error('Invalid credentials');
+      resetLoginForm();
     }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!signupName || !signupLocation || !signupId || !signupVerification || !signupPassword) {
-      toast.error('Please fill all fields');
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!loginId || !loginPassword) {
+      toast.error('Please provide both Hospital ID and password.');
       return;
     }
-    
-    // Mock signup success
-    login({
-      id: 'new-hospital',
-      name: signupName,
-      role: 'hospital',
-      hospitalId: signupId,
-      location: signupLocation
-    });
-    toast.success('Registration successful!');
-    navigate('/hospital/dashboard');
+
+    setIsLoginLoading(true);
+    try {
+      const { token, hospital } = await authAPI.hospitalLogin({
+        hospitalId: loginId.trim(),
+        password: loginPassword,
+      });
+
+      login(
+        {
+          id: hospital.id,
+          name: hospital.name,
+          role: 'hospital',
+          hospitalId: hospital.hospitalId,
+          location: hospital.location,
+          city: hospital.city,
+          contactEmail: hospital.contactEmail,
+          contactPhone: hospital.contactPhone,
+          stats: hospital.stats,
+        },
+        token
+      );
+
+      toast.success('Login successful!');
+      navigate('/hospital/dashboard');
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ??
+        'Unable to log in. Please verify your credentials and try again.';
+      toast.error(message);
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleSignup = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!signupName || !signupLocation || !signupId || !signupEmail || !signupPhone || !signupPassword) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
+    setIsSignupLoading(true);
+    try {
+      const { token, hospital } = await authAPI.hospitalSignup({
+        name: signupName.trim(),
+        location: signupLocation.trim(),
+        hospitalId: signupId.trim(),
+        password: signupPassword,
+        contactEmail: signupEmail.trim(),
+        contactPhone: signupPhone.trim(),
+      });
+
+      login(
+        {
+          id: hospital.id,
+          name: hospital.name,
+          role: 'hospital',
+          hospitalId: hospital.hospitalId,
+          location: hospital.location,
+          city: hospital.city,
+          contactEmail: hospital.contactEmail,
+          contactPhone: hospital.contactPhone,
+        },
+        token
+      );
+
+      toast.success('Hospital registered successfully!');
+      navigate('/hospital/dashboard');
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ??
+        'Could not complete registration. Please review your details and try again.';
+      toast.error(message);
+    } finally {
+      setIsSignupLoading(false);
+    }
   };
 
   return (
@@ -76,7 +151,7 @@ const HospitalAuth = () => {
           <p className="text-sm text-muted-foreground">Manage emergency blood requests</p>
         </div>
 
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as 'login' | 'signup')} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -90,7 +165,7 @@ const HospitalAuth = () => {
                   id="loginId"
                   placeholder="e.g., CGH001"
                   value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
+                  onChange={(event) => setLoginId(event.target.value)}
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Demo ID: CGH001</p>
@@ -102,12 +177,12 @@ const HospitalAuth = () => {
                   type="password"
                   placeholder="Enter password"
                   value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
+                  onChange={(event) => setLoginPassword(event.target.value)}
                   className="mt-1"
                 />
               </div>
-              <Button type="submit" className="w-full bg-gradient-primary">
-                Login to Dashboard
+              <Button type="submit" className="w-full bg-gradient-primary" disabled={isLoginLoading}>
+                {isLoginLoading ? 'Authenticating...' : 'Login to Dashboard'}
               </Button>
             </form>
           </TabsContent>
@@ -115,70 +190,76 @@ const HospitalAuth = () => {
           <TabsContent value="signup">
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
-                <Label htmlFor="signupName">Hospital Name</Label>
+                <Label htmlFor="signupName">Hospital Name *</Label>
                 <Input
                   id="signupName"
                   placeholder="Enter hospital name"
                   value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
+                  onChange={(event) => setSignupName(event.target.value)}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="signupLocation">Location</Label>
+                <Label htmlFor="signupLocation">Location (City, State) *</Label>
                 <Input
                   id="signupLocation"
-                  placeholder="City, State"
+                  placeholder="Metro City, State"
                   value={signupLocation}
-                  onChange={(e) => setSignupLocation(e.target.value)}
+                  onChange={(event) => setSignupLocation(event.target.value)}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="signupId">Unique Hospital ID</Label>
+                <Label htmlFor="signupId">Unique Hospital ID *</Label>
                 <Input
                   id="signupId"
                   placeholder="e.g., ABC123"
                   value={signupId}
-                  onChange={(e) => setSignupId(e.target.value)}
+                  onChange={(event) => setSignupId(event.target.value)}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="signupVerification">Verification Code</Label>
+                <Label htmlFor="signupEmail">Contact Email *</Label>
                 <Input
-                  id="signupVerification"
-                  placeholder="Enter verification code"
-                  value={signupVerification}
-                  onChange={(e) => setSignupVerification(e.target.value)}
+                  id="signupEmail"
+                  type="email"
+                  placeholder="contact@hospital.com"
+                  value={signupEmail}
+                  onChange={(event) => setSignupEmail(event.target.value)}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="signupPassword">Password</Label>
+                <Label htmlFor="signupPhone">Contact Phone *</Label>
+                <Input
+                  id="signupPhone"
+                  placeholder="+1-555-0100"
+                  value={signupPhone}
+                  onChange={(event) => setSignupPhone(event.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="signupPassword">Create Password *</Label>
                 <Input
                   id="signupPassword"
                   type="password"
-                  placeholder="Create password"
+                  placeholder="Enter a secure password"
                   value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
+                  onChange={(event) => setSignupPassword(event.target.value)}
                   className="mt-1"
                 />
               </div>
-              <Button type="submit" className="w-full bg-gradient-primary">
-                Register Hospital
+              <Button type="submit" className="w-full bg-gradient-primary" disabled={isSignupLoading}>
+                {isSignupLoading ? 'Registering...' : 'Register Hospital'}
               </Button>
             </form>
           </TabsContent>
         </Tabs>
-
-        <Button
-          variant="ghost"
-          className="w-full mt-4"
-          onClick={() => navigate('/')}
-        >
-          Back to Home
-        </Button>
+        <p className="text-xs text-muted-foreground text-center mt-6">
+          Registration grants immediate access to the hospital dashboard where you can manage blood requests and monitor inventory status in real time.
+        </p>
       </Card>
     </div>
   );

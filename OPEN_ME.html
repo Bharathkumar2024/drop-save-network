@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vital Drop - Quick Access</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        
+        .status.success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+        }
+        
+        .status.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 1.1em;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+        
+        .steps {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .credentials {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin-top: 10px;
+        }
+        
+        .credentials div {
+            margin: 5px 0;
+        }
+        
+        .highlight {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        
+        #serverStatus {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🩸 Vital Drop</h1>
+        <p class="subtitle">Blood Donation Management System</p>
+        
+        <div id="serverStatus" class="status">
+            <div class="loading"></div>
+            Checking server status...
+        </div>
+        
+        <div class="button-group">
+            <a href="http://localhost:5173" class="btn btn-primary" target="_blank">
+                🚀 Open Application
+            </a>
+            <a href="http://localhost:5000/api/health" class="btn btn-secondary" target="_blank">
+                ❤️ Check Backend
+            </a>
+            <a href="http://localhost:5000/api/seed" class="btn btn-success" target="_blank">
+                🌱 Seed Database
+            </a>
+            <a href="file:///c:/drop-save-network/QUICK_START_GUIDE.md" class="btn btn-info" target="_blank">
+                📖 Quick Guide
+            </a>
+        </div>
+        
+        <div class="steps">
+            <h3 style="margin-bottom: 15px;">📋 Quick Start Steps:</h3>
+            
+            <div class="step" data-step="1">
+                <strong>Seed the Database</strong> (First time only)<br>
+                Click "🌱 Seed Database" button above
+            </div>
+            
+            <div class="step" data-step="2">
+                <strong>Open the Application</strong><br>
+                Click "🚀 Open Application" button above
+            </div>
+            
+            <div class="step" data-step="3">
+                <strong>Login with Test Account</strong><br>
+                Click "Hospital Login" on the landing page
+                <div class="credentials">
+                    <div>Hospital ID: <span class="highlight">CGH001</span></div>
+                    <div>Password: <span class="highlight">password123</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status warning">
+            <strong>⚠️ Important:</strong> Make sure both server windows are open and running:
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>"Vital Drop - BACKEND (Port 5000)"</li>
+                <li>"Vital Drop - FRONTEND (Port 5173)"</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+            <strong>🆘 Still seeing "Unable to Connect"?</strong>
+            <ol style="margin-top: 10px; margin-left: 20px;">
+                <li>Close both server windows</li>
+                <li>Run <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">fix-connection.bat</code></li>
+                <li>Wait 15-20 seconds</li>
+                <li>Click "🚀 Open Application" again</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        // Check server status
+        async function checkServers() {
+            const statusDiv = document.getElementById('serverStatus');
+            
+            try {
+                // Check backend
+                const backendResponse = await fetch('http://localhost:5000/api/health');
+                const backendData = await backendResponse.json();
+                
+                // Check frontend
+                const frontendResponse = await fetch('http://localhost:5173');
+                
+                if (backendResponse.ok && frontendResponse.ok) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ <strong>All servers are running!</strong> You can now open the application.';
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    ❌ <strong>Servers are not running!</strong><br>
+                    <small>Please run <code>fix-connection.bat</code> to start the servers.</small>
+                `;
+            }
+        }
+        
+        // Check on page load
+        checkServers();
+        
+        // Recheck every 5 seconds
+        setInterval(checkServers, 5000);
+    </script>
+</body>
+</html>

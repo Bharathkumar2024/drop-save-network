@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from 'react';
 import { Package, TruckIcon, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import EmergencyButton from '@/components/shared/EmergencyButton';
@@ -14,28 +15,51 @@ const COLORS = ['#DC2626', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6'
 const BloodBankDashboard = () => {
   const bloodBank = mockBloodBanks[0];
   
-  const totalStock = bloodBank.preservationList.reduce((sum, unit) => sum + unit.unitsAvailable, 0);
-  const maxCapacity = 300;
-  const stockPercentage = (totalStock / maxCapacity) * 100;
+  // Performance: Memoize expensive calculations
+  const totalStock = useMemo(() => 
+    bloodBank.preservationList.reduce((sum, unit) => sum + unit.unitsAvailable, 0),
+    [bloodBank.preservationList]
+  );
   
-  const availableUnits = bloodBank.preservationList.filter(u => u.status === 'available');
-  const reservedUnits = bloodBank.preservationList.filter(u => u.status === 'reserved');
-  const dispatchedUnits = bloodBank.preservationList.filter(u => u.status === 'dispatched');
+  const maxCapacity = 300;
+  
+  const stockPercentage = useMemo(() => 
+    (totalStock / maxCapacity) * 100,
+    [totalStock]
+  );
+  
+  // Performance: Memoize filtered arrays
+  const availableUnits = useMemo(() => 
+    bloodBank.preservationList.filter(u => u.status === 'available'),
+    [bloodBank.preservationList]
+  );
+  
+  const reservedUnits = useMemo(() => 
+    bloodBank.preservationList.filter(u => u.status === 'reserved'),
+    [bloodBank.preservationList]
+  );
+  
+  const dispatchedUnits = useMemo(() => 
+    bloodBank.preservationList.filter(u => u.status === 'dispatched'),
+    [bloodBank.preservationList]
+  );
 
-  const handleExportRecord = (recordId: string) => {
+  // Performance: useCallback for event handlers
+  const handleExportRecord = useCallback((recordId: string) => {
     toast.success('Send record exported successfully', {
       description: 'Safety record has been generated for download'
     });
-  };
+  }, []);
 
-  const isNearExpiry = (expiryDate: string) => {
+  // Performance: useCallback for utility functions
+  const isNearExpiry = useCallback((expiryDate: string) => {
     const days = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return days <= 7;
-  };
+  }, []);
 
-  const isExpired = (expiryDate: string) => {
+  const isExpired = useCallback((expiryDate: string) => {
     return new Date(expiryDate) < new Date();
-  };
+  }, []);
 
   return (
     <DashboardLayout
@@ -46,7 +70,7 @@ const BloodBankDashboard = () => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <Card className="glass-card p-4 md:p-6 hover:box-glow transition-all">
+        <Card className="glass-card p-4 md:p-6 hover:border-primary/50 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Blood Stock</p>
@@ -59,7 +83,7 @@ const BloodBankDashboard = () => {
           </div>
         </Card>
 
-        <Card className="glass-card p-4 md:p-6 hover:box-glow transition-all">
+        <Card className="glass-card p-4 md:p-6 hover:border-success/50 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Success Rate</p>
@@ -71,7 +95,7 @@ const BloodBankDashboard = () => {
           </div>
         </Card>
 
-        <Card className="glass-card p-4 md:p-6 hover:box-glow transition-all">
+        <Card className="glass-card p-4 md:p-6 hover:border-accent/50 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Pending Shipments</p>
@@ -83,7 +107,7 @@ const BloodBankDashboard = () => {
           </div>
         </Card>
 
-        <Card className="glass-card p-4 md:p-6 hover:box-glow transition-all">
+        <Card className="glass-card p-4 md:p-6 hover:border-primary/50 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Reputation</p>

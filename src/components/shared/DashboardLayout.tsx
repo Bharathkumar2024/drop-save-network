@@ -47,12 +47,12 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
                   </nav>
                 </SheetContent>
               </Sheet>
-              
-              <h1 
+
+              <h1
                 className="text-xl md:text-2xl font-bold text-glow cursor-pointer animate-blink"
                 onClick={() => navigate('/')}
               >
-                Vital Drop
+                Drop Save
               </h1>
             </div>
 

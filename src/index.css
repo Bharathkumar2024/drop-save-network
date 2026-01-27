@@ -66,6 +66,16 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
   }
+  
+  /* Performance optimizations */
+  html {
+    scroll-behavior: auto; /* Disable smooth scroll for better performance */
+  }
+  
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 @layer utilities {
@@ -87,14 +97,35 @@
   
   .glass-card {
     background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px); /* Reduced from 12px for better performance */
     border: 1px solid hsl(var(--border) / 0.5);
+    contain: layout style paint; /* CSS containment for better performance */
+    will-change: auto;
   }
   
   .glass-card-primary {
     background: hsl(var(--primary) / 0.1);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px); /* Reduced from 12px for better performance */
     border: 1px solid hsl(var(--primary) / 0.3);
+    contain: layout style paint; /* CSS containment for better performance */
+    will-change: auto;
+  }
+  
+  /* Optimized animations - use transform and opacity only */
+  .animate-optimized {
+    will-change: transform, opacity;
+    transform: translateZ(0); /* Force GPU acceleration */
+  }
+  
+  /* Reduce motion for better performance */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
