@@ -71,10 +71,6 @@ export const mockAuthAPI = {
         role: 'hospital',
         hospitalId: hospital.hospitalId,
         location: hospital.location,
-        city: hospital.city,
-        contactEmail: hospital.contactEmail,
-        contactPhone: hospital.contactPhone,
-        stats: hospital.stats,
       },
       token: 'mock-token-' + Date.now(),
     };

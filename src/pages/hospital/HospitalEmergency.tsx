@@ -66,7 +66,7 @@ const HospitalEmergency = () => {
           status: 'active',
           createdAt: new Date().toISOString(),
           requesterName: user?.name || hospital.name,
-          city: user?.city || hospital.city,
+          city: hospital.location?.split(',')[0] || 'Unknown',
           location: user?.location || hospital.location,
         }
       };

@@ -48,10 +48,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      onError: queryErrorHandler,
     },
     mutations: {
-      onError: queryErrorHandler,
     },
   },
 });

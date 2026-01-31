@@ -156,7 +156,7 @@ const BloodStockEnhanced = () => {
       initial_units: formData.units_available,
       status: 'available',
       quality_check_passed: true,
-    });
+    } as any);
 
     if (error) {
       toast({
@@ -178,7 +178,7 @@ const BloodStockEnhanced = () => {
   const handleUpdateUnit = async () => {
     if (!selectedUnit) return;
 
-    const { data, error } = await updateBloodUnit(selectedUnit.id, formData);
+    const { data, error } = await updateBloodUnit(selectedUnit.id, formData as any);
 
     if (error) {
       toast({

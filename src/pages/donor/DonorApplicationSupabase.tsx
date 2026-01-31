@@ -32,7 +32,7 @@ const DonorApplicationSupabase = () => {
     addressLine2: '',
     city: donorData?.city || '',
     state: donorData?.state || '',
-    postalCode: donorData?.postal_code || '',
+    postalCode: (donorData as any)?.postal_code || '',
     pulse: '',
     hb: '',
     bp: '',
@@ -123,7 +123,7 @@ const DonorApplicationSupabase = () => {
         gender: donorData.gender || '',
         city: donorData.city || '',
         state: donorData.state || '',
-        postalCode: donorData.postal_code || '',
+        postalCode: (donorData as any).postal_code || '',
         hasDonatedBefore: (donorData.donation_count || 0) > 0,
       }));
     }
