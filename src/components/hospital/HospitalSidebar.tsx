@@ -61,7 +61,7 @@ const HospitalSidebar = () => {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed top-20 left-4 z-50 md:hidden bg-card/95 backdrop-blur-md border border-border/50 shadow-lg hover:bg-card"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

@@ -1,8 +1,8 @@
 // Mock API Service - Returns mock data without backend connection
-import { 
-  mockHospitals, 
-  mockDonors, 
-  mockBloodBanks, 
+import {
+  mockHospitals,
+  mockDonors,
+  mockBloodBanks,
   mockEmergencyRequests,
   type Patient,
   type Donor,
@@ -86,14 +86,30 @@ export const mockAuthAPI = {
     email: string;
     phone: string;
     bloodGroup: string;
+    age?: number;
     lastDonationDate?: string;
     city: string;
+    password?: string;
   }) => {
     await delay(500);
     return {
       success: true,
-      message: 'OTP sent to your email',
-      tempId: 'temp-donor-' + Date.now(),
+      message: 'Donor registered successfully',
+      donor: {
+        id: 'mock-donor-' + Date.now(),
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        bloodGroup: data.bloodGroup,
+        bloodType: data.bloodGroup, // Add both for compatibility
+        city: data.city,
+        age: data.age,
+        role: 'donor',
+        lastDonationDate: data.lastDonationDate || null,
+        availability: true,
+        reputation: 100,
+      },
+      token: 'mock-token-' + Date.now(),
     };
   },
 
@@ -116,21 +132,53 @@ export const mockAuthAPI = {
     };
   },
 
-  donorLogin: async (data: { email: string }) => {
+  donorLogin: async (data: { email: string; password?: string }) => {
     await delay(500);
+    const donor = mockDonors[0];
     return {
       success: true,
-      message: 'OTP sent to your email',
+      message: 'Login successful',
+      donor: {
+        id: donor.id,
+        name: donor.name,
+        email: donor.email,
+        phone: donor.phone,
+        bloodGroup: donor.bloodGroup,
+        bloodType: donor.bloodGroup, // Add both for compatibility
+        city: donor.city,
+        role: 'donor',
+        lastDonationDate: donor.lastDonationDate,
+        availability: donor.availability,
+        reputation: donor.reputation,
+      },
+      token: 'mock-token-' + Date.now(),
     };
   },
 
   // Blood Bank Authentication
-  bloodBankSignup: async (formData: FormData) => {
+  bloodBankSignup: async (data: {
+    name: string;
+    location: string;
+    bloodBankId: string;
+    password: string;
+    contactEmail: string;
+    contactPhone: string;
+  }) => {
     await delay(500);
     return {
       success: true,
-      message: 'Blood bank registered. OTP sent for verification.',
-      tempId: 'temp-bb-' + Date.now(),
+      message: 'Blood bank registered successfully',
+      bloodBank: {
+        id: 'mock-bb-' + Date.now(),
+        name: data.name,
+        bloodBankId: data.bloodBankId,
+        location: data.location,
+        city: data.location.split(',')[0].trim(),
+        contactEmail: data.contactEmail,
+        contactPhone: data.contactPhone,
+        role: 'bloodbank',
+      },
+      token: 'mock-token-' + Date.now(),
     };
   },
 
@@ -152,19 +200,21 @@ export const mockAuthAPI = {
     };
   },
 
-  bloodBankLogin: async (data: { bankId: string; password: string }) => {
+  bloodBankLogin: async (data: { bloodBankId: string; password: string }) => {
     await delay(500);
     const bloodBank = mockBloodBanks[0];
     return {
       success: true,
       message: 'Login successful',
-      user: {
+      bloodBank: {
         id: bloodBank.id,
         name: bloodBank.name,
-        role: 'bloodbank',
-        bankId: bloodBank.bankId,
+        bloodBankId: bloodBank.bankId,
         location: bloodBank.location,
-        ownerName: bloodBank.ownerName,
+        city: bloodBank.location.split(',')[0].trim(),
+        contactEmail: bloodBank.contactEmail || 'contact@bloodbank.com',
+        contactPhone: bloodBank.contactPhone || '+1-555-0100',
+        role: 'bloodbank',
       },
       token: 'mock-token-' + Date.now(),
     };

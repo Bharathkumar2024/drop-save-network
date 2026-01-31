@@ -25,14 +25,14 @@ const HospitalLayout = ({ children }: HospitalLayoutProps) => {
       <HospitalSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* Header */}
-        <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/80 backdrop-blur-md">
-          <div className="container mx-auto px-4 py-4">
+        <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/80 backdrop-blur-md shadow-sm">
+          <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
             <div className="flex items-center justify-between">
               {/* Logo and Title */}
               <div className="flex items-center gap-4">
-                <h1 
+                <h1
                   className="text-xl md:text-2xl font-bold text-glow cursor-pointer animate-blink"
                   onClick={() => navigate('/')}
                 >
@@ -51,7 +51,8 @@ const HospitalLayout = ({ children }: HospitalLayoutProps) => {
                   variant="ghost"
                   size="icon"
                   onClick={handleLogout}
-                  className="hidden md:flex"
+                  className="hidden md:flex hover:bg-destructive/20"
+                  title="Logout"
                 >
                   <LogOut className="h-5 w-5" />
                 </Button>
@@ -61,8 +62,10 @@ const HospitalLayout = ({ children }: HospitalLayoutProps) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
+          <div className="min-h-full pl-0 md:pl-0">
+            {children}
+          </div>
         </main>
       </div>
     </div>

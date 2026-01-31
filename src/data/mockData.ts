@@ -53,6 +53,8 @@ export interface BloodBank {
   ownerName: string;
   location: string;
   bankId: string;
+  contactEmail?: string;
+  contactPhone?: string;
   approvedCertificates: string[];
   otpVerified: boolean;
   preservationList: BloodUnit[];
@@ -65,11 +67,19 @@ export interface Hospital {
   id: string;
   name: string;
   location: string;
+  city: string;
   hospitalId: string;
+  contactEmail: string;
+  contactPhone: string;
   patients: Patient[];
   totalDonorsConnected: number;
   totalBloodUnitsReceived: number;
   urgentRequests: number;
+  stats?: {
+    totalRequests: number;
+    completedRequests: number;
+    emergencyRequests: number;
+  };
 }
 
 export interface EmergencyRequest {
@@ -95,10 +105,18 @@ export const mockHospitals: Hospital[] = [
     id: 'h1',
     name: 'City General Hospital',
     location: 'Downtown, Metro City',
+    city: 'Metro City',
     hospitalId: 'CGH001',
+    contactEmail: 'contact@citygeneralhospital.org',
+    contactPhone: '+1-555-0100',
     totalDonorsConnected: 342,
     totalBloodUnitsReceived: 1250,
     urgentRequests: 3,
+    stats: {
+      totalRequests: 156,
+      completedRequests: 142,
+      emergencyRequests: 3
+    },
     patients: [
       {
         id: 'p1',
@@ -281,6 +299,8 @@ export const mockBloodBanks: BloodBank[] = [
     ownerName: 'Dr. Rachel Green',
     location: 'Central District, Metro City',
     bankId: 'CBB001',
+    contactEmail: 'contact@centralbloodbank.com',
+    contactPhone: '+1-555-2000',
     approvedCertificates: ['ISO-9001.pdf', 'Health-License-2025.pdf', 'Safety-Certificate.pdf'],
     otpVerified: true,
     reputationScore: 94,

@@ -1,934 +1,1058 @@
-import { useState, useEffect, useMemo } from 'react';
-import { MapPin, Calendar, Clock, Navigation, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Clock, MapPin, User, Mail, Phone, Droplet, CheckCircle2, Building2, Navigation, Heart, Activity, AlertTriangle } from 'lucide-react';
 import DonorLayout from '@/components/donor/DonorLayout';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockDonors, mockBloodBanks } from '@/data/mockData';
-import { useToast } from '@/hooks/use-toast';
 
-interface BloodCamp {
-  id: string;
-  name: string;
-  location: string;
-  coordinates: { lat: number; lng: number };
-  date: string;
-  time: string;
-  distance?: number;
-}
+const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const upcomingCamps = [
+  {
+    id: '1',
+    name: 'Central Blood Bank - Main Camp',
+    organizer: 'Red Cross Society',
+    location: 'Downtown, Metro City',
+    address: '123 Main Street, City Center',
+    date: '2026-02-15',
+    time: '9:00 AM - 5:00 PM',
+    distance: '2.5 km',
+    capacity: 100,
+    registered: 45,
+  },
+  {
+    id: '2',
+    name: 'City General Hospital Blood Drive',
+    organizer: 'City General Hospital',
+    location: 'Downtown, Metro City',
+    address: '456 Hospital Road, Medical District',
+    date: '2026-02-18',
+    time: '10:00 AM - 3:00 PM',
+    distance: '3.2 km',
+    capacity: 80,
+    registered: 32,
+  },
+  {
+    id: '3',
+    name: 'Community Health Center Camp',
+    organizer: 'Metro Health Foundation',
+    location: 'Westside, Metro City',
+    address: '789 Community Ave, Westside',
+    date: '2026-02-20',
+    time: '8:00 AM - 4:00 PM',
+    distance: '5.1 km',
+    capacity: 60,
+    registered: 28,
+  },
+  {
+    id: '4',
+    name: 'Metro Medical Center Blood Camp',
+    organizer: 'Metro Medical Center',
+    location: 'Eastside, Metro City',
+    address: '321 Medical Plaza, Eastside',
+    date: '2026-02-22',
+    time: '9:00 AM - 2:00 PM',
+    distance: '6.8 km',
+    capacity: 50,
+    registered: 15,
+  },
+];
 
 const DonorApplication = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  
-  // Find donor data
-  const donor = useMemo(() => 
-    mockDonors.find(d => d.id === user?.id) || mockDonors[0],
-    [user?.id]
-  );
-
-  // Form state
+  const [selectedCamp, setSelectedCamp] = useState<string>('');
   const [formData, setFormData] = useState({
-    name: donor.name,
-    bloodGroup: donor.bloodGroup,
-    phone: donor.phone,
-    email: donor.email,
+    fullName: user?.name || '',
     age: '',
-    weight: '',
     gender: '',
+    bloodGroup: user?.bloodType || '',
+    weight: '',
     occupation: '',
+    phone: user?.phone || '',
+    email: user?.email || '',
     address: '',
     addressLine2: '',
     city: '',
     state: '',
-    postalCode: '',
-    pulse: '',
-    hb: '',
-    bp: '',
-    temperature: '',
-    lastDonation: donor.lastDonationDate,
-    hasDonatedBefore: false,
-    medicalConditions: '',
-    location: '',
+    pincode: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    lastDonationDate: '',
+    hasDonatedBefore: 'no',
+
+    // Recent Health Status
+    hasRecentColdFlu: 'no',
+    hasDonatedPlatelets: 'no',
+    plateletDonationDate: '',
+
+    // Sexual Health Screening
+    hadSexualRiskBehavior: 'no',
+    hadDrugUseRisk: 'no',
+
+    // Medical Conditions Checkboxes
+    medicalConditions: [] as string[],
+
+    // Existing fields
+    hasChronicIllness: 'no',
+    chronicIllnessDetails: '',
+    isOnMedication: 'no',
+    medicationDetails: '',
+    hasAllergies: 'no',
+    allergyDetails: '',
+    hasSurgery: 'no',
+    surgeryDetails: '',
+    hasTattoo: 'no',
+    tattooDate: '',
+    hasTravelHistory: 'no',
+    travelDetails: '',
+    smokingStatus: 'no',
+    alcoholConsumption: 'no',
+    additionalNotes: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // Medical history checkboxes
-  const [recentProcedures, setRecentProcedures] = useState({
-    tattooing: false,
-    earPiercing: false,
-    dentalExtraction: false,
-  });
-
-  const [diseases, setDiseases] = useState({
-    heartDisease: false,
-    cancer: false,
-    diabetes: false,
-    hepatitis: false,
-    std: false,
-    typhoid: false,
-    lungDisease: false,
-    tuberculosis: false,
-    allergicDisease: false,
-    kidneyDisease: false,
-    epilepsy: false,
-    bleedingTendency: false,
-    jaundice: false,
-    malaria: false,
-    faintingSpells: false,
-  });
-
-  const [medications, setMedications] = useState({
-    antibiotics: false,
-    steroids: false,
-    aspirin: false,
-    vaccinations: false,
-    alcohol: false,
-    dogBite: false,
-    rabiesVaccine: false,
-  });
-
-  const [surgeryHistory, setSurgeryHistory] = useState({
-    majorSurgery: false,
-    minorSurgery: false,
-    bloodTransfusion: false,
-  });
-
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationDetecting, setLocationDetecting] = useState(false);
-  const [selectedCamp, setSelectedCamp] = useState<string | null>(null);
-  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
-  const [eligibilityMessage, setEligibilityMessage] = useState<string | null>(null);
-
-  // Mock blood camps with coordinates
-  const bloodCamps: BloodCamp[] = useMemo(() => [
-    {
-      id: 'camp1',
-      name: 'Central Blood Bank - Main Camp',
-      location: 'Central District, Metro City',
-      coordinates: { lat: 40.7128, lng: -74.0060 },
-      date: '2025-11-09',
-      time: '9:00 AM - 4:00 PM',
-    },
-    {
-      id: 'camp2',
-      name: 'City General Hospital Blood Drive',
-      location: 'Downtown, Metro City',
-      coordinates: { lat: 40.7580, lng: -73.9855 },
-      date: '2025-11-14',
-      time: '10:00 AM - 3:00 PM',
-    },
-    {
-      id: 'camp3',
-      name: 'Community Health Center Camp',
-      location: 'Westside, Metro City',
-      coordinates: { lat: 40.7489, lng: -73.9680 },
-      date: '2025-11-23',
-      time: '9:00 AM - 4:00 PM',
-    },
-    {
-      id: 'camp4',
-      name: 'Metro Medical Center Blood Camp',
-      location: 'Eastside, Metro City',
-      coordinates: { lat: 40.7282, lng: -73.9942 },
-      date: '2025-11-28',
-      time: '8:00 AM - 2:00 PM',
-    },
-  ], []);
-
-  // Calculate distance between two coordinates (Haversine formula)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Radius of Earth in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Get nearby camps sorted by distance
-  const nearbyCamps = useMemo(() => {
-    if (!userLocation) return bloodCamps;
-
-    const campsWithDistance = bloodCamps.map(camp => ({
-      ...camp,
-      distance: calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        camp.coordinates.lat,
-        camp.coordinates.lng
-      ),
-    }));
-
-    return campsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-  }, [userLocation, bloodCamps]);
-
-  // Detect user location
-  const detectLocation = () => {
-    setLocationDetecting(true);
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ lat: latitude, lng: longitude });
-          setFormData(prev => ({
-            ...prev,
-            location: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
-          }));
-          setLocationDetecting(false);
-          toast({
-            title: "Location Detected",
-            description: "Your location has been detected successfully!",
-          });
-        },
-        (error) => {
-          console.error('Error detecting location:', error);
-          // Use mock location for demo
-          const mockLat = 40.7128;
-          const mockLng = -74.0060;
-          setUserLocation({ lat: mockLat, lng: mockLng });
-          setFormData(prev => ({
-            ...prev,
-            location: `Metro City (Demo Location)`,
-          }));
-          setLocationDetecting(false);
-          toast({
-            title: "Demo Location Used",
-            description: "Using demo location for testing purposes.",
-          });
-        }
-      );
-    } else {
-      // Use mock location
-      const mockLat = 40.7128;
-      const mockLng = -74.0060;
-      setUserLocation({ lat: mockLat, lng: mockLng });
-      setFormData(prev => ({
-        ...prev,
-        location: `Metro City (Demo Location)`,
-      }));
-      setLocationDetecting(false);
-      toast({
-        title: "Demo Location Used",
-        description: "Geolocation not supported. Using demo location.",
-      });
-    }
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle camp selection
-  const handleCampSelect = (campId: string) => {
-    setSelectedCamp(campId);
-  };
-
-  // Submit application
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedCamp) {
-      toast({
-        title: "No Camp Selected",
-        description: "Please select a blood camp to apply.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate form - check all required fields
-    if (!formData.age || !formData.weight || !formData.gender || 
-        !formData.address || !formData.city || !formData.state || !formData.postalCode) {
-      toast({
-        title: "Incomplete Form",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check eligibility
-    const age = parseInt(formData.age);
-    const weight = parseInt(formData.weight);
-    
-    if (age < 18 || age > 65) {
-      setEligibilityMessage("Sorry, you are not eligible. Age must be between 18-65 years.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    if (weight < 50) {
-      setEligibilityMessage("Sorry, you are not eligible. Minimum weight requirement is 50 kg.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Check last donation date (3 months for males, 4 months for females)
-    const lastDonation = new Date(formData.lastDonation);
-    const today = new Date();
-    const monthsDiff = (today.getTime() - lastDonation.getTime()) / (1000 * 60 * 60 * 24 * 30);
-    
-    // Gender-based waiting period
-    const requiredMonths = formData.gender.toLowerCase() === 'female' ? 4 : 3;
-    
-    if (monthsDiff < requiredMonths) {
-      setEligibilityMessage(`Sorry, you must wait ${requiredMonths} months between donations. You can donate again after ${new Date(lastDonation.getTime() + requiredMonths * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}.`);
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Check for disqualifying medical conditions
-    const hasCriticalDisease = diseases.heartDisease || diseases.cancer || diseases.hepatitis || 
-                                diseases.std || diseases.tuberculosis || diseases.kidneyDisease || 
-                                diseases.epilepsy;
-    
-    if (hasCriticalDisease) {
-      setEligibilityMessage("Sorry, you are not eligible due to medical history. Please consult with a healthcare professional.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Check for recent procedures (within 6 months)
-    if (recentProcedures.tattooing || recentProcedures.earPiercing) {
-      setEligibilityMessage("Sorry, you must wait 6 months after tattooing or ear piercing before donating blood.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Check for recent medications (within 72 hours)
-    if (medications.antibiotics || medications.aspirin) {
-      setEligibilityMessage("Sorry, you must wait 72 hours after taking antibiotics or aspirin before donating blood.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Check for recent surgery or transfusion (within 6 months)
-    if (surgeryHistory.majorSurgery || surgeryHistory.bloodTransfusion) {
-      setEligibilityMessage("Sorry, you must wait 6 months after major surgery or blood transfusion before donating blood.");
-      setApplicationSubmitted(true);
-      return;
-    }
-
-    // Application successful
-    const selectedCampData = nearbyCamps.find(c => c.id === selectedCamp);
-    setEligibilityMessage(`Congratulations! Your application has been approved. Please visit ${selectedCampData?.name} on ${selectedCampData?.date} at ${selectedCampData?.time}. You will receive a confirmation message shortly.`);
-    setApplicationSubmitted(true);
-
-    toast({
-      title: "Application Submitted",
-      description: "Your application has been sent to the blood center!",
+  const handleMedicalConditionToggle = (condition: string) => {
+    setFormData(prev => {
+      const conditions = prev.medicalConditions;
+      if (conditions.includes(condition)) {
+        return { ...prev, medicalConditions: conditions.filter(c => c !== condition) };
+      } else {
+        return { ...prev, medicalConditions: [...conditions, condition] };
+      }
     });
   };
 
-  // Auto-detect location on mount
-  useEffect(() => {
-    detectLocation();
-  }, []);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (applicationSubmitted) {
-    return (
-      <DonorLayout>
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Application Status</h1>
-          <p className="text-gray-400">Your application has been processed</p>
-        </div>
+    if (!selectedCamp) {
+      toast.error('Please select a blood camp');
+      return;
+    }
 
-        <Card className="glass-card p-8 text-center">
-          {eligibilityMessage?.includes('Congratulations') ? (
-            <>
-              <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="h-10 w-10 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-green-500 mb-4">Application Approved!</h2>
-            </>
-          ) : (
-            <>
-              <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle className="h-10 w-10 text-red-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-red-500 mb-4">Not Eligible</h2>
-            </>
-          )}
-          
-          <p className="text-lg text-gray-300 mb-8">{eligibilityMessage}</p>
+    if (!agreedToTerms) {
+      toast.error('Please agree to the terms and conditions');
+      return;
+    }
 
-          <Button
-            onClick={() => {
-              setApplicationSubmitted(false);
-              setEligibilityMessage(null);
-              setSelectedCamp(null);
-            }}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Submit Another Application
-          </Button>
-        </Card>
-      </DonorLayout>
-    );
-  }
+    if (!formData.fullName || !formData.age || !formData.gender || !formData.bloodGroup ||
+      !formData.phone || !formData.email || !formData.address) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const camp = upcomingCamps.find(c => c.id === selectedCamp);
+    toast.success('Application Submitted Successfully!', {
+      description: `You've registered for ${camp?.name} on ${new Date(camp?.date || '').toLocaleDateString()}. We'll contact you soon.`,
+    });
+
+    setIsSubmitting(false);
+    setSelectedCamp('');
+    setAgreedToTerms(false);
+  };
 
   return (
     <DonorLayout>
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Apply for Blood Camp</h1>
-        <p className="text-gray-400">Fill out the form and find nearby blood camps</p>
-      </div>
-
-      {/* Location Detection */}
-      <Card className="glass-card p-6 mb-8 border border-red-500/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MapPin className="h-6 w-6 text-red-500" />
-            <div>
-              <h3 className="text-lg font-bold text-white">Your Location</h3>
-              <p className="text-sm text-gray-400">
-                {formData.location || 'Location not detected'}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={detectLocation}
-            disabled={locationDetecting}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            <Navigation className="h-4 w-4 mr-2" />
-            {locationDetecting ? 'Detecting...' : 'Detect Location'}
-          </Button>
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Application Form */}
-        <div className="space-y-6">
-          <Card className="glass-card p-6">
-            <h2 className="text-2xl font-bold text-red-600 mb-6">📋 Blood Donation Application Form</h2>
-            <p className="text-sm text-yellow-400 mb-4">⚠️ Confidential - Please answer all questions correctly</p>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Personal Information</h3>
-                
-                <div>
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="bg-gray-800/50 border-gray-700 text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="age">Age *</Label>
-                    <Input
-                      id="age"
-                      name="age"
-                      type="number"
-                      value={formData.age}
-                      onChange={handleInputChange}
-                      placeholder="18-65"
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="gender">Gender *</Label>
-                    <select
-                      id="gender"
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full h-10 px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-md text-white"
-                    >
-                      <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="bloodGroup">Blood Group</Label>
-                    <Input
-                      id="bloodGroup"
-                      name="bloodGroup"
-                      value={formData.bloodGroup}
-                      disabled
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="occupation">Occupation</Label>
-                  <Input
-                    id="occupation"
-                    name="occupation"
-                    value={formData.occupation}
-                    onChange={handleInputChange}
-                    className="bg-gray-800/50 border-gray-700 text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">Address *</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Street Address"
-                    required
-                    className="bg-gray-800/50 border-gray-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    id="addressLine2"
-                    name="addressLine2"
-                    value={formData.addressLine2}
-                    onChange={handleInputChange}
-                    placeholder="Address Line 2 (Optional)"
-                    className="bg-gray-800/50 border-gray-700 text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Input
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      placeholder="City *"
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      placeholder="State *"
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      id="postalCode"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      onChange={handleInputChange}
-                      placeholder="Postal Code *"
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Vital Signs */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Vital Signs</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="weight">Weight (kg) *</Label>
-                    <Input
-                      id="weight"
-                      name="weight"
-                      type="number"
-                      value={formData.weight}
-                      onChange={handleInputChange}
-                      placeholder="Min 50 kg"
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="pulse">Pulse (bpm)</Label>
-                    <Input
-                      id="pulse"
-                      name="pulse"
-                      value={formData.pulse}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 72"
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="hb">Haemoglobin (Hb)</Label>
-                    <Input
-                      id="hb"
-                      name="hb"
-                      value={formData.hb}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 13.5"
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bp">Blood Pressure</Label>
-                    <Input
-                      id="bp"
-                      name="bp"
-                      value={formData.bp}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 120/80"
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="temperature">Temperature (°F)</Label>
-                    <Input
-                      id="temperature"
-                      name="temperature"
-                      value={formData.temperature}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 98.6"
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Donation History */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Donation History</h3>
-                
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="hasDonatedBefore"
-                    checked={formData.hasDonatedBefore}
-                    onCheckedChange={(checked) => 
-                      setFormData(prev => ({ ...prev, hasDonatedBefore: checked as boolean }))
-                    }
-                    className="border-gray-600"
-                  />
-                  <Label htmlFor="hasDonatedBefore" className="cursor-pointer">
-                    Have you donated blood previously?
-                  </Label>
-                </div>
-
-                {formData.hasDonatedBefore && (
-                  <div>
-                    <Label htmlFor="lastDonation">Last Donation Date *</Label>
-                    <Input
-                      id="lastDonation"
-                      name="lastDonation"
-                      type="date"
-                      value={formData.lastDonation}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-gray-800/50 border-gray-700 text-white"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Recent Procedures */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                  Recent Procedures (Last 6 Months)
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="tattooing"
-                      checked={recentProcedures.tattooing}
-                      onCheckedChange={(checked) => 
-                        setRecentProcedures(prev => ({ ...prev, tattooing: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="tattooing" className="cursor-pointer">Tattooing</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="earPiercing"
-                      checked={recentProcedures.earPiercing}
-                      onCheckedChange={(checked) => 
-                        setRecentProcedures(prev => ({ ...prev, earPiercing: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="earPiercing" className="cursor-pointer">Ear Piercing</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="dentalExtraction"
-                      checked={recentProcedures.dentalExtraction}
-                      onCheckedChange={(checked) => 
-                        setRecentProcedures(prev => ({ ...prev, dentalExtraction: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="dentalExtraction" className="cursor-pointer">Dental Extraction</Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Medical History */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                  Medical History - Do you suffer from or have suffered from any of the following?
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'heartDisease', label: 'Heart Disease' },
-                    { key: 'cancer', label: 'Cancer/Malignant Disease' },
-                    { key: 'diabetes', label: 'Diabetes' },
-                    { key: 'hepatitis', label: 'Hepatitis B/C' },
-                    { key: 'std', label: 'Sexually Transmitted Diseases' },
-                    { key: 'typhoid', label: 'Typhoid (last one year)' },
-                    { key: 'lungDisease', label: 'Lung Disease' },
-                    { key: 'tuberculosis', label: 'Tuberculosis' },
-                    { key: 'allergicDisease', label: 'Allergic Disease' },
-                    { key: 'kidneyDisease', label: 'Kidney Disease' },
-                    { key: 'epilepsy', label: 'Epilepsy' },
-                    { key: 'bleedingTendency', label: 'Abnormal Bleeding Tendency' },
-                    { key: 'jaundice', label: 'Jaundice (last one year)' },
-                    { key: 'malaria', label: 'Malaria (six months)' },
-                    { key: 'faintingSpells', label: 'Fainting Spells' },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={key}
-                        checked={diseases[key as keyof typeof diseases]}
-                        onCheckedChange={(checked) => 
-                          setDiseases(prev => ({ ...prev, [key]: checked as boolean }))
-                        }
-                        className="border-gray-600"
-                      />
-                      <Label htmlFor={key} className="cursor-pointer text-sm">{label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Medications */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                  Recent Medications (Past 72 Hours)
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'antibiotics', label: 'Antibiotics' },
-                    { key: 'steroids', label: 'Steroids' },
-                    { key: 'aspirin', label: 'Aspirin' },
-                    { key: 'vaccinations', label: 'Vaccinations' },
-                    { key: 'alcohol', label: 'Alcohol' },
-                    { key: 'dogBite', label: 'Dog Bite' },
-                    { key: 'rabiesVaccine', label: 'Rabies Vaccine (1 year)' },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={key}
-                        checked={medications[key as keyof typeof medications]}
-                        onCheckedChange={(checked) => 
-                          setMedications(prev => ({ ...prev, [key]: checked as boolean }))
-                        }
-                        className="border-gray-600"
-                      />
-                      <Label htmlFor={key} className="cursor-pointer text-sm">{label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Surgery History */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                  Surgery/Transfusion History (Past 6 Months)
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="majorSurgery"
-                      checked={surgeryHistory.majorSurgery}
-                      onCheckedChange={(checked) => 
-                        setSurgeryHistory(prev => ({ ...prev, majorSurgery: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="majorSurgery" className="cursor-pointer">Major Surgery</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="minorSurgery"
-                      checked={surgeryHistory.minorSurgery}
-                      onCheckedChange={(checked) => 
-                        setSurgeryHistory(prev => ({ ...prev, minorSurgery: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="minorSurgery" className="cursor-pointer">Minor Surgery</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="bloodTransfusion"
-                      checked={surgeryHistory.bloodTransfusion}
-                      onCheckedChange={(checked) => 
-                        setSurgeryHistory(prev => ({ ...prev, bloodTransfusion: checked as boolean }))
-                      }
-                      className="border-gray-600"
-                    />
-                    <Label htmlFor="bloodTransfusion" className="cursor-pointer">Blood Transfusion</Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Notes */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                  Additional Medical Information
-                </h3>
-                
-                <div>
-                  <Label htmlFor="medicalConditions">Any other medical conditions or notes</Label>
-                  <textarea
-                    id="medicalConditions"
-                    name="medicalConditions"
-                    value={formData.medicalConditions}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-md text-white"
-                    placeholder="List any other medical conditions, medications, or important information..."
-                  />
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-red-600 hover:bg-red-700 text-lg py-6"
-                disabled={!selectedCamp}
-              >
-                {selectedCamp ? 'Submit Application' : 'Please Select a Blood Camp First'}
-              </Button>
-            </form>
-          </Card>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Apply for Blood Donation Camp</h1>
+          <p className="text-gray-400">Complete the application form to register for a blood donation camp</p>
         </div>
 
-        {/* Nearby Blood Camps */}
-        <div className="space-y-4">
-          <Card className="glass-card p-6">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">
-              Nearby Blood Camps
-              {userLocation && (
-                <span className="text-sm text-gray-400 ml-2">(Sorted by distance)</span>
-              )}
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Application Form */}
+          <div className="lg:col-span-2">
+            <Card className="bg-gray-900 border-gray-800 shadow-xl">
+              <CardHeader className="border-b border-gray-800 bg-red-950/20">
+                <CardTitle className="text-2xl text-white flex items-center gap-3">
+                  <Building2 className="h-6 w-6 text-red-500" />
+                  Blood Donation Application Form
+                </CardTitle>
+                <p className="text-sm text-yellow-500 mt-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Confidential - Please answer all questions correctly
+                </p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2 pb-2 border-b border-gray-800">
+                      <User className="h-5 w-5 text-red-500" />
+                      Personal Information
+                    </h3>
 
-            <div className="space-y-3">
-              {nearbyCamps.map((camp) => (
-                <div
-                  key={camp.id}
-                  onClick={() => handleCampSelect(camp.id)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                    selectedCamp === camp.id
-                      ? 'border-red-500 bg-red-600/20'
-                      : 'border-gray-700 hover:border-red-500/50 bg-gray-800/30'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-white">{camp.name}</h3>
-                    {camp.distance && (
-                      <span className="text-xs bg-red-600/30 text-red-400 px-2 py-1 rounded">
-                        {camp.distance.toFixed(1)} km
-                      </span>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Full Name *</Label>
+                      <Input
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        placeholder="Enter your full name"
+                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Age *</Label>
+                        <Input
+                          type="number"
+                          min="18"
+                          max="65"
+                          value={formData.age}
+                          onChange={(e) => handleInputChange('age', e.target.value)}
+                          placeholder="18-65"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Gender *</Label>
+                        <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
+                          <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-12">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Blood Group *</Label>
+                        <Select value={formData.bloodGroup} onValueChange={(value) => handleInputChange('bloodGroup', value)}>
+                          <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-12">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bloodTypes.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Weight (kg) *</Label>
+                        <Input
+                          type="number"
+                          min="50"
+                          value={formData.weight}
+                          onChange={(e) => handleInputChange('weight', e.target.value)}
+                          placeholder="Minimum 50 kg"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Occupation</Label>
+                        <Input
+                          value={formData.occupation}
+                          onChange={(e) => handleInputChange('occupation', e.target.value)}
+                          placeholder="Your occupation"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2 pb-2 border-b border-gray-800">
+                      <Phone className="h-5 w-5 text-red-500" />
+                      Contact Information
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Phone Number *</Label>
+                        <Input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          placeholder="+1-555-0100"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Email Address *</Label>
+                        <Input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          placeholder="your.email@example.com"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Address *</Label>
+                      <Input
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        placeholder="Street Address"
+                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Address Line 2 (Optional)</Label>
+                      <Input
+                        value={formData.addressLine2}
+                        onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                        placeholder="Apartment, suite, etc."
+                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">City *</Label>
+                        <Input
+                          value={formData.city}
+                          onChange={(e) => handleInputChange('city', e.target.value)}
+                          placeholder="City"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">State *</Label>
+                        <Input
+                          value={formData.state}
+                          onChange={(e) => handleInputChange('state', e.target.value)}
+                          placeholder="State"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">PIN Code *</Label>
+                        <Input
+                          value={formData.pincode}
+                          onChange={(e) => handleInputChange('pincode', e.target.value)}
+                          placeholder="PIN Code"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Emergency Contact Name *</Label>
+                        <Input
+                          value={formData.emergencyContact}
+                          onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                          placeholder="Contact person name"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-2 block">Emergency Contact Phone *</Label>
+                        <Input
+                          type="tel"
+                          value={formData.emergencyPhone}
+                          onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
+                          placeholder="+1-555-0100"
+                          className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-12"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Medical History */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2 pb-2 border-b border-gray-800">
+                      <Heart className="h-5 w-5 text-red-500" />
+                      Medical History
+                    </h3>
+
+                    {/* Previous Donation */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you donated blood before? *</Label>
+                      <RadioGroup value={formData.hasDonatedBefore} onValueChange={(value) => handleInputChange('hasDonatedBefore', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="donated-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="donated-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="donated-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="donated-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasDonatedBefore === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Last Donation Date</Label>
+                          <Input
+                            type="date"
+                            value={formData.lastDonationDate}
+                            onChange={(e) => handleInputChange('lastDonationDate', e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white h-12"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recent Cold/Flu */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you been sick with a cold or flu in the past 2 weeks? *</Label>
+                      <RadioGroup value={formData.hasRecentColdFlu} onValueChange={(value) => handleInputChange('hasRecentColdFlu', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="coldflu-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="coldflu-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="coldflu-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="coldflu-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {/* Platelet/Plasma Donation */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you donated platelets or plasma? *</Label>
+                      <RadioGroup value={formData.hasDonatedPlatelets} onValueChange={(value) => handleInputChange('hasDonatedPlatelets', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="platelets-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="platelets-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="platelets-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="platelets-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasDonatedPlatelets === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Last platelet/plasma donation date</Label>
+                          <Input
+                            type="date"
+                            value={formData.plateletDonationDate}
+                            onChange={(e) => handleInputChange('plateletDonationDate', e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white h-12"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Sexual Health Screening */}
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <Label className="text-gray-300 mb-3 block">
+                        In the last 48 months, have you had sex with a male who has had sex with another male? *
+                      </Label>
+                      <RadioGroup value={formData.hadSexualRiskBehavior} onValueChange={(value) => handleInputChange('hadSexualRiskBehavior', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="sexrisk-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="sexrisk-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="sexrisk-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="sexrisk-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <Label className="text-gray-300 mb-3 block">
+                        In the last 12 months, have you had sex with anyone who has used needles to take drugs not prescribed by a doctor? *
+                      </Label>
+                      <RadioGroup value={formData.hadDrugUseRisk} onValueChange={(value) => handleInputChange('hadDrugUseRisk', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="drugrisk-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="drugrisk-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="drugrisk-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="drugrisk-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {/* Medical Conditions Checklist */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block font-bold">
+                        Do you have or have you ever had any of the following medical conditions? *
+                      </Label>
+                      <p className="text-sm text-gray-400 mb-4">Check all that apply</p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        {[
+                          'Cancer',
+                          'Heart Disease',
+                          'Lung Disease',
+                          'Bleeding problems or blood diseases',
+                          'Kidney disease',
+                          'Liver disease',
+                          'Diabetes',
+                          'Seizures',
+                          'Autoimmune disease',
+                          'Hepatitis (Since age 11)',
+                          'Hepatitis B or C (anytime)',
+                          'HIV/AIDS',
+                          'Babesiosis',
+                          'Chagas disease',
+                          'Malaria',
+                          'Syphilis or Gonorrhea',
+                          'HTLV',
+                          'West Nile Virus',
+                          'Zika Virus',
+                          'Ebola',
+                          'COVID-19 (Currently positive)',
+                          'Tuberculosis',
+                          'Other blood infections',
+                        ].map((condition) => (
+                          <div key={condition} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`condition-${condition}`}
+                              checked={formData.medicalConditions.includes(condition)}
+                              onCheckedChange={() => handleMedicalConditionToggle(condition)}
+                              className="border-gray-600 data-[state=checked]:bg-red-600"
+                            />
+                            <Label
+                              htmlFor={`condition-${condition}`}
+                              className="text-sm text-gray-300 cursor-pointer"
+                            >
+                              {condition}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Medications */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block font-bold">
+                        Are you taking or have you taken any of these medications in the following timeframes? *
+                      </Label>
+                      <div className="space-y-2 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-aspirin" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-aspirin" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Aspirin</strong> (last 2 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-plavix" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-plavix" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Plavix (clopidogrel)</strong> (last 14 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-effient" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-effient" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Effient (prasugrel)</strong> (last 3 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-brilinta" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-brilinta" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Brilinta (ticagrelor)</strong> (last 14 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-ticlid" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-ticlid" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Ticlid (ticlopidine)</strong> (last 14 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-feldene" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-feldene" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Feldene (piroxicam)</strong> (last 2 days)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-accutane" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-accutane" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Accutane (isotretinoin)</strong> (last 1 month)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-proscar" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-proscar" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Proscar (finasteride)</strong> or <strong className="text-white">Propecia</strong> (last 1 month)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-avodart" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-avodart" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Avodart (dutasteride)</strong> (last 6 months)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-soriatane" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-soriatane" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Soriatane (acitretin)</strong> (last 3 years)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-tegison" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-tegison" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Tegison (etretinate)</strong> (ever)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-growth-hormone" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-growth-hormone" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Growth hormone from human pituitary glands</strong> (ever)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-insulin-beef" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-insulin-beef" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Insulin from cows (bovine insulin)</strong> (ever since 1980)
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2 text-sm">
+                          <Checkbox id="med-hepatitis-b" className="mt-0.5 border-gray-600 data-[state=checked]:bg-red-600" />
+                          <Label htmlFor="med-hepatitis-b" className="text-gray-300 cursor-pointer">
+                            <strong className="text-white">Hepatitis B Immune Globulin</strong> (last 12 months)
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pregnancy Question (for females) */}
+                    {formData.gender === 'female' && (
+                      <div className="p-4 bg-pink-500/10 border border-pink-500/30 rounded-lg">
+                        <Label className="text-gray-300 mb-3 block">
+                          Are you currently pregnant or have you been pregnant in the last 6 weeks? *
+                        </Label>
+                        <RadioGroup defaultValue="no">
+                          <div className="flex items-center space-x-6">
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="pregnant-yes" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="pregnant-yes" className="text-white cursor-pointer">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="pregnant-no" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="pregnant-no" className="text-white cursor-pointer">No</Label>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </div>
                     )}
-                  </div>
-                  
-                  <div className="space-y-1 text-sm text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{camp.location}</span>
+
+                    {/* Chronic Illness */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Do you have any chronic illness? *</Label>
+                      <RadioGroup value={formData.hasChronicIllness} onValueChange={(value) => handleInputChange('hasChronicIllness', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="illness-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="illness-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="illness-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="illness-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasChronicIllness === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Please specify</Label>
+                          <Textarea
+                            value={formData.chronicIllnessDetails}
+                            onChange={(e) => handleInputChange('chronicIllnessDetails', e.target.value)}
+                            placeholder="Describe your chronic illness"
+                            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[80px]"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{new Date(camp.date).toLocaleDateString()}</span>
+
+                    {/* Medication */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Are you currently on any medication? *</Label>
+                      <RadioGroup value={formData.isOnMedication} onValueChange={(value) => handleInputChange('isOnMedication', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="medication-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="medication-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="medication-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="medication-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.isOnMedication === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Please list medications</Label>
+                          <Textarea
+                            value={formData.medicationDetails}
+                            onChange={(e) => handleInputChange('medicationDetails', e.target.value)}
+                            placeholder="List all medications you're taking"
+                            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[80px]"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{camp.time}</span>
+
+                    {/* Allergies */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Do you have any allergies? *</Label>
+                      <RadioGroup value={formData.hasAllergies} onValueChange={(value) => handleInputChange('hasAllergies', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="allergy-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="allergy-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="allergy-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="allergy-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasAllergies === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Please specify allergies</Label>
+                          <Textarea
+                            value={formData.allergyDetails}
+                            onChange={(e) => handleInputChange('allergyDetails', e.target.value)}
+                            placeholder="List all known allergies"
+                            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[80px]"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Surgery */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you had any surgery in the last 6 months? *</Label>
+                      <RadioGroup value={formData.hasSurgery} onValueChange={(value) => handleInputChange('hasSurgery', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="surgery-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="surgery-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="surgery-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="surgery-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasSurgery === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Please provide details</Label>
+                          <Textarea
+                            value={formData.surgeryDetails}
+                            onChange={(e) => handleInputChange('surgeryDetails', e.target.value)}
+                            placeholder="Describe the surgery and date"
+                            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[80px]"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tattoo */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you gotten a tattoo/piercing in the last 12 months? *</Label>
+                      <RadioGroup value={formData.hasTattoo} onValueChange={(value) => handleInputChange('hasTattoo', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="tattoo-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="tattoo-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="tattoo-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="tattoo-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasTattoo === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Date of tattoo/piercing</Label>
+                          <Input
+                            type="date"
+                            value={formData.tattooDate}
+                            onChange={(e) => handleInputChange('tattooDate', e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white h-12"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Travel History */}
+                    <div>
+                      <Label className="text-gray-300 mb-3 block">Have you traveled abroad in the last 3 months? *</Label>
+                      <RadioGroup value={formData.hasTravelHistory} onValueChange={(value) => handleInputChange('hasTravelHistory', value)}>
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="travel-yes" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="travel-yes" className="text-white cursor-pointer">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="travel-no" className="border-gray-600 text-red-500" />
+                            <Label htmlFor="travel-no" className="text-white cursor-pointer">No</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      {formData.hasTravelHistory === 'yes' && (
+                        <div className="mt-3">
+                          <Label className="text-gray-300 mb-2 block">Countries visited</Label>
+                          <Textarea
+                            value={formData.travelDetails}
+                            onChange={(e) => handleInputChange('travelDetails', e.target.value)}
+                            placeholder="List countries and dates"
+                            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[80px]"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {selectedCamp === camp.id && (
-                    <div className="mt-3 flex items-center gap-2 text-green-500 text-sm">
-                      <CheckCircle className="h-4 w-4" />
-                      <span>Selected</span>
+                  {/* Lifestyle */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2 pb-2 border-b border-gray-800">
+                      <Activity className="h-5 w-5 text-red-500" />
+                      Lifestyle Information
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label className="text-gray-300 mb-3 block">Do you smoke? *</Label>
+                        <RadioGroup value={formData.smokingStatus} onValueChange={(value) => handleInputChange('smokingStatus', value)}>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="smoke-yes" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="smoke-yes" className="text-white cursor-pointer">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="smoke-no" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="smoke-no" className="text-white cursor-pointer">No</Label>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <div>
+                        <Label className="text-gray-300 mb-3 block">Do you consume alcohol? *</Label>
+                        <RadioGroup value={formData.alcoholConsumption} onValueChange={(value) => handleInputChange('alcoholConsumption', value)}>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="alcohol-yes" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="alcohol-yes" className="text-white cursor-pointer">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="alcohol-no" className="border-gray-600 text-red-500" />
+                              <Label htmlFor="alcohol-no" className="text-white cursor-pointer">No</Label>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Additional Notes */}
+                  <div>
+                    <Label className="text-gray-300 mb-2 block">Additional Notes (Optional)</Label>
+                    <Textarea
+                      value={formData.additionalNotes}
+                      onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
+                      placeholder="Any additional information you'd like to share"
+                      className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]"
+                    />
+                  </div>
+
+                  {/* Terms and Conditions */}
+                  <div className="p-6 bg-blue-500/10 border-2 border-blue-500/30 rounded-xl">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="terms"
+                        checked={agreedToTerms}
+                        onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                        className="mt-1 border-blue-500 data-[state=checked]:bg-blue-600"
+                      />
+                      <div>
+                        <Label htmlFor="terms" className="text-white font-medium cursor-pointer">
+                          I agree to the terms and conditions *
+                        </Label>
+                        <p className="text-sm text-gray-400 mt-1">
+                          I certify that all information provided above is true and accurate. I understand that providing false information may disqualify me from donating blood.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg h-14"
+                    disabled={isSubmitting || !selectedCamp || !agreedToTerms}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Submitting Application...
+                      </div>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        Submit Application
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Nearby Blood Camps */}
+          <div>
+            <Card className="bg-gray-900 border-gray-800 shadow-xl sticky top-6">
+              <CardHeader className="border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-500" />
+                    Nearby Blood Camps
+                  </CardTitle>
+                  <Badge className="bg-blue-600 text-white">{upcomingCamps.length}</Badge>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+                  {upcomingCamps.map((camp) => {
+                    const isSelected = selectedCamp === camp.id;
+                    const spotsLeft = camp.capacity - camp.registered;
+                    const fillPercentage = (camp.registered / camp.capacity) * 100;
 
-          {/* Important Notice */}
-          <Card className="glass-card p-6 border border-yellow-500/30">
-            <h3 className="text-lg font-bold text-yellow-500 mb-3">⚠️ Important Notice</h3>
-            <ul className="text-sm text-gray-300 space-y-2">
-              <li>• Ensure you meet all eligibility criteria before applying</li>
-              <li>• Bring a valid ID and health certificate to the camp</li>
-              <li>• Eat a healthy meal before donation</li>
-              <li>• Stay hydrated and avoid alcohol 24 hours before</li>
-              <li>• You will receive a confirmation message after review</li>
-            </ul>
-          </Card>
+                    return (
+                      <button
+                        key={camp.id}
+                        onClick={() => setSelectedCamp(camp.id)}
+                        className={`w-full text-left p-4 rounded-xl transition-all ${isSelected
+                          ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-2 border-blue-500 shadow-lg shadow-blue-500/20'
+                          : 'bg-gray-800 border-2 border-gray-700 hover:border-gray-600'
+                          }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-bold text-white text-base leading-tight pr-2">{camp.name}</h4>
+                          {isSelected && (
+                            <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                          )}
+                        </div>
+
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Building2 className="h-4 w-4 text-blue-500" />
+                            <span className="text-white font-medium">{camp.organizer}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <MapPin className="h-4 w-4 text-blue-500" />
+                            <span>{camp.location}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Calendar className="h-4 w-4 text-green-500" />
+                            <span className="text-white font-medium">
+                              {new Date(camp.date).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Clock className="h-4 w-4 text-purple-500" />
+                            <span>{camp.time}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Navigation className="h-4 w-4 text-orange-500" />
+                            <span className="text-orange-500 font-medium">{camp.distance}</span>
+                          </div>
+
+                          {/* Capacity Bar */}
+                          <div className="pt-2">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-400">Capacity</span>
+                              <span className={`font-bold ${spotsLeft < 20 ? 'text-red-500' : 'text-green-500'}`}>
+                                {spotsLeft} spots left
+                              </span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all ${fillPercentage > 80 ? 'bg-red-500' : fillPercentage > 50 ? 'bg-yellow-500' : 'bg-green-500'
+                                  }`}
+                                style={{ width: `${fillPercentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <div className="mt-3 pt-3 border-t border-blue-500/30">
+                            <p className="text-xs text-blue-400 font-medium">
+                              ✓ Selected for donation
+                            </p>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </DonorLayout>

@@ -126,11 +126,16 @@ router.post('/hospital/login', async (req, res) => {
 });
 
 // @route   POST /api/auth/donor/signup
-// @desc    Register a new donor (with OTP)
+// @desc    Register a new donor (with password)
 // @access  Public
 router.post('/donor/signup', async (req, res) => {
   try {
-    const { name, email, phone, bloodGroup, lastDonationDate, city } = req.body;
+    const { name, email, phone, bloodGroup, age, city, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !phone || !bloodGroup || !city || !password) {
+      return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
 
     // Check if donor exists
     const donorExists = await Donor.findOne({ email });
@@ -138,37 +143,47 @@ router.post('/donor/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Generate OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Create donor
+    // Create donor with password
     const donor = await Donor.create({
-      name,
-      email,
-      phone,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
       bloodGroup,
-      lastDonationDate: lastDonationDate || null,
-      city,
-      otp,
-      otpExpiry,
-      verified: false
+      age: parseInt(age) || 18,
+      city: city.trim(),
+      password,  // Model will hash this
+      verified: true,  // Auto-verify for password-based signup
+      availability: true
     });
 
-    // Send OTP via email (simulated)
-    await sendEmail({
+    const token = generateToken(donor._id, 'donor');
+
+    // Send welcome SMS (async - don't await)
+    sendEmail({
       email: donor.email,
-      subject: 'Vital Drop - Verify Your Account',
-      message: `Your OTP is: ${otp}. Valid for 10 minutes.`
-    });
+      subject: 'Welcome to Vital Drop!',
+      message: `Hi ${donor.name}, thank you for joining Vital Drop! You'll receive emergency alerts for ${donor.bloodGroup} blood in ${donor.city}.`
+    }).catch(err => console.error('Email send error:', err));
 
     res.status(201).json({
-      message: 'OTP sent to your email',
-      email: donor.email,
-      // For prototype, return OTP in response (remove in production)
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      token,
+      donor: {
+        id: donor._id,
+        name: donor.name,
+        email: donor.email,
+        phone: donor.phone,
+        bloodGroup: donor.bloodGroup,
+        bloodType: donor.bloodGroup, // Alias for frontend
+        age: donor.age,
+        city: donor.city,
+        lastDonationDate: donor.lastDonationDate,
+        reputation: donor.reputation,
+        totalDonations: donor.totalDonations,
+        availability: donor.availability
+      }
     });
   } catch (error) {
+    console.error('Donor signup error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -223,98 +238,111 @@ router.post('/donor/verify-otp', async (req, res) => {
 });
 
 // @route   POST /api/auth/donor/login
-// @desc    Login donor (send OTP)
+// @desc    Login donor (with password)
 // @access  Public
 router.post('/donor/login', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
 
-    const donor = await Donor.findOne({ email });
-    if (!donor) {
-      return res.status(404).json({ message: 'Donor not found. Please sign up first.' });
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password.' });
     }
 
-    // Generate new OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    // Check for donor
+    const donor = await Donor.findOne({ email }).select('+password');
+    if (!donor) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    donor.otp = otp;
-    donor.otpExpiry = otpExpiry;
-    await donor.save();
+    // Check password
+    const isMatch = await donor.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    // Send OTP
-    await sendEmail({
-      email: donor.email,
-      subject: 'Vital Drop - Login OTP',
-      message: `Your login OTP is: ${otp}. Valid for 10 minutes.`
-    });
+    const token = generateToken(donor._id, 'donor');
 
     res.json({
-      message: 'OTP sent to your email',
-      email: donor.email,
-      // For prototype
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      token,
+      donor: {
+        id: donor._id,
+        name: donor.name,
+        email: donor.email,
+        phone: donor.phone,
+        bloodGroup: donor.bloodGroup,
+        bloodType: donor.bloodGroup, // Alias for frontend
+        age: donor.age,
+        city: donor.city,
+        lastDonationDate: donor.lastDonationDate,
+        reputation: donor.reputation,
+        totalDonations: donor.totalDonations,
+        availability: donor.availability
+      }
     });
   } catch (error) {
+    console.error('Donor login error:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 // @route   POST /api/auth/bloodbank/signup
-// @desc    Register a new blood bank (with certificate upload)
+// @desc    Register a new blood bank (with password)
 // @access  Public
-router.post('/bloodbank/signup', upload.array('certificates', 5), async (req, res) => {
+router.post('/bloodbank/signup', async (req, res) => {
   try {
-    const { name, bankId, location, password, contactEmail, contactPhone } = req.body;
+    const { name, bloodBankId, location, password, contactEmail, contactPhone } = req.body;
+
+    // Validate required fields
+    if (!name || !bloodBankId || !location || !password || !contactEmail || !contactPhone) {
+      return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
 
     // Check if blood bank exists
-    const bankExists = await BloodBank.findOne({ bankId });
+    const bankExists = await BloodBank.findOne({ bankId: bloodBankId });
     if (bankExists) {
       return res.status(400).json({ message: 'Bank ID already registered' });
     }
 
-    // Extract city
-    const city = location.split(',').pop().trim();
-
-    // Process uploaded certificates
-    const certificates = req.files ? req.files.map(file => ({
-      filename: file.filename,
-      path: file.path
-    })) : [];
-
-    // Generate OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    // Extract city from location
+    let city = '';
+    if (location.includes(',')) {
+      city = location.split(',').pop()?.trim() || '';
+    }
+    if (!city) {
+      city = location.trim();
+    }
 
     // Create blood bank
     const bloodBank = await BloodBank.create({
-      name,
-      bankId,
-      location,
+      name: name.trim(),
+      bankId: bloodBankId.trim(),
+      location: location.trim(),
       city,
       password,
-      contactEmail,
-      contactPhone,
-      certificates,
-      otp,
-      otpExpiry,
-      verified: false
+      contactEmail: contactEmail.trim(),
+      contactPhone: contactPhone.trim(),
+      verified: true // Auto-verify for password-based signup
     });
 
-    // Send OTP
-    await sendEmail({
-      email: bloodBank.contactEmail,
-      subject: 'Vital Drop - Verify Your Blood Bank',
-      message: `Your OTP is: ${otp}. Valid for 10 minutes.`
-    });
+    const token = generateToken(bloodBank._id, 'bloodbank');
 
     res.status(201).json({
-      message: 'Blood bank registered. OTP sent to your email.',
-      bankId: bloodBank.bankId,
-      // For prototype
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      token,
+      bloodBank: {
+        id: bloodBank._id,
+        name: bloodBank.name,
+        bankId: bloodBank.bankId,
+        bloodBankId: bloodBank.bankId, // Alias for frontend
+        location: bloodBank.location,
+        city: bloodBank.city,
+        contactEmail: bloodBank.contactEmail,
+        contactPhone: bloodBank.contactPhone,
+        verified: bloodBank.verified
+      }
     });
   } catch (error) {
+    console.error('Blood bank signup error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -373,9 +401,10 @@ router.post('/bloodbank/verify-otp', async (req, res) => {
 // @access  Public
 router.post('/bloodbank/login', async (req, res) => {
   try {
-    const { bankId, password } = req.body;
+    const { bloodBankId, password } = req.body;
 
-    const bloodBank = await BloodBank.findOne({ bankId }).select('+password');
+    // Find by bankId field but accept bloodBankId parameter
+    const bloodBank = await BloodBank.findOne({ bankId: bloodBankId }).select('+password');
     if (!bloodBank) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -383,10 +412,6 @@ router.post('/bloodbank/login', async (req, res) => {
     const isMatch = await bloodBank.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    if (!bloodBank.verified) {
-      return res.status(403).json({ message: 'Blood bank not verified. Please verify your account.' });
     }
 
     const token = generateToken(bloodBank._id, 'bloodbank');
@@ -397,6 +422,7 @@ router.post('/bloodbank/login', async (req, res) => {
         id: bloodBank._id,
         name: bloodBank.name,
         bankId: bloodBank.bankId,
+        bloodBankId: bloodBank.bankId, // Alias for frontend
         location: bloodBank.location,
         city: bloodBank.city,
         contactEmail: bloodBank.contactEmail,
@@ -406,12 +432,13 @@ router.post('/bloodbank/login', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Blood bank login error:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 // @route   POST /api/auth/patient/signup
-// @desc    Register a new patient
+// @desc    Register a new patient (with password)
 // @access  Public
 router.post('/patient/signup', async (req, res) => {
   try {
@@ -428,39 +455,38 @@ router.post('/patient/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Generate OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Create patient
+    // Create patient with password
     const patient = await PatientUser.create({
-      name,
-      email,
-      phone,
-      age,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      age: parseInt(age),
       bloodGroup,
-      city,
+      city: city.trim(),
       location: location || city,
       password,
-      otp,
-      otpExpiry,
-      verified: false
+      verified: true // Auto-verify for password-based signup
     });
 
-    // Send OTP via email
-    await sendEmail({
-      email: patient.email,
-      subject: 'Vital Drop - Verify Your Patient Account',
-      message: `Welcome to Vital Drop! Your OTP is: ${otp}. Valid for 10 minutes.`
-    });
+    const token = generateToken(patient._id, 'patient');
 
     res.status(201).json({
-      message: 'Patient registered successfully. OTP sent to your email.',
-      email: patient.email,
-      // For development
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      token,
+      patient: {
+        id: patient._id,
+        name: patient.name,
+        email: patient.email,
+        phone: patient.phone,
+        age: patient.age,
+        bloodGroup: patient.bloodGroup,
+        bloodType: patient.bloodGroup, // Alias for frontend
+        city: patient.city,
+        location: patient.location,
+        verified: patient.verified
+      }
     });
   } catch (error) {
+    console.error('Patient signup error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -515,39 +541,47 @@ router.post('/patient/verify-otp', async (req, res) => {
 });
 
 // @route   POST /api/auth/patient/login
-// @desc    Login patient (send OTP)
+// @desc    Login patient (with password)
 // @access  Public
 router.post('/patient/login', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
 
-    const patient = await PatientUser.findOne({ email });
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found. Please sign up first.' });
+    // Validate
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // Generate new OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    const patient = await PatientUser.findOne({ email }).select('+password');
+    if (!patient) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    patient.otp = otp;
-    patient.otpExpiry = otpExpiry;
-    await patient.save();
+    // Check password
+    const isMatch = await patient.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    // Send OTP
-    await sendEmail({
-      email: patient.email,
-      subject: 'Vital Drop - Login OTP',
-      message: `Your login OTP is: ${otp}. Valid for 10 minutes.`
-    });
+    const token = generateToken(patient._id, 'patient');
 
     res.json({
-      message: 'OTP sent to your email',
-      email: patient.email,
-      // For development
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+      token,
+      patient: {
+        id: patient._id,
+        name: patient.name,
+        email: patient.email,
+        phone: patient.phone,
+        age: patient.age,
+        bloodGroup: patient.bloodGroup,
+        bloodType: patient.bloodGroup, // Alias for frontend
+        city: patient.city,
+        location: patient.location,
+        verified: patient.verified
+      }
     });
   } catch (error) {
+    console.error('Patient login error:', error);
     res.status(500).json({ message: error.message });
   }
 });

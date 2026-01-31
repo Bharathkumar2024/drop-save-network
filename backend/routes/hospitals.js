@@ -2,7 +2,9 @@ import express from 'express';
 import Hospital from '../models/Hospital.js';
 import Patient from '../models/Patient.js';
 import Emergency from '../models/Emergency.js';
+import Donor from '../models/Donor.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { sendEmergencyAlert } from '../utils/sendSMS.js';
 
 const router = express.Router();
 
@@ -18,7 +20,7 @@ router.get('/:id/dashboard', protect, authorize('hospital'), async (req, res) =>
 
     // Get patients
     const patients = await Patient.find({ hospital: req.params.id }).sort({ createdAt: -1 });
-    
+
     // Get active emergencies
     const emergencies = await Emergency.find({
       createdBy: req.params.id,
@@ -218,12 +220,35 @@ router.post('/:id/emergency', protect, authorize('hospital'), async (req, res) =
 
     // Broadcast to donors and blood banks in the same city
     io.to(`city:${hospital.city}`).emit('emergency.created', emergencyPayload);
-    
+
     // Also broadcast to all donors and blood banks regardless of city (for wider reach)
     io.to('role:donor').emit('emergency.created', emergencyPayload);
     io.to('role:bloodbank').emit('emergency.created', emergencyPayload);
-    
+
+
     console.log(`Emergency broadcast to city:${hospital.city}, role:donor, and role:bloodbank`);
+
+    // Find matching donors (same blood type, same city, available) and send SMS
+    const matchingDonors = await Donor.find({
+      bloodGroup: bloodType,
+      city: hospital.city,
+      availability: true,
+      verified: true
+    }).select('name phone bloodGroup');
+
+    console.log(`Found ${matchingDonors.length} matching donors for ${bloodType} in ${hospital.city}`);
+
+    // Send SMS to matching donors (async - don't wait)
+    if (matchingDonors.length > 0) {
+      sendEmergencyAlert(matchingDonors, {
+        bloodType: emergency.bloodType,
+        hospital: hospital.name,
+        city: hospital.city,
+        urgency: priority
+      }).catch(err => {
+        console.error('SMS alert error:', err.message);
+      });
+    }
 
     res.status(201).json(emergency);
   } catch (error) {
@@ -241,8 +266,8 @@ router.get('/:id/emergency-status', protect, authorize('hospital'), async (req, 
       creatorModel: 'Hospital',
       status: 'Active'
     })
-    .populate('responses.donor', 'name phone bloodGroup')
-    .sort({ createdAt: -1 });
+      .populate('responses.donor', 'name phone bloodGroup')
+      .sort({ createdAt: -1 });
 
     res.json(emergencies);
   } catch (error) {

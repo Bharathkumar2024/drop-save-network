@@ -1,304 +1,326 @@
 import { useState } from 'react';
-import { Building2, MapPin, Phone, Mail, Calendar, Users, Activity, Award } from 'lucide-react';
-import HospitalLayout from '@/components/hospital/HospitalLayout';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Building2, MapPin, Mail, Phone, Save, Edit3, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockHospitals, mockBloodBanks } from '@/data/mockData';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import HospitalLayout from '@/components/hospital/HospitalLayout';
+import { toast } from 'sonner';
+import { mockHospitals } from '@/data/mockData';
 
 const HospitalProfile = () => {
   const hospital = mockHospitals[0];
-  const connectedBloodBanks = mockBloodBanks;
 
-  // Mock newly registered blood banks
-  const newBloodBanks = [
-    {
-      id: 'new1',
-      name: 'Metro Blood Center',
-      location: 'North District',
-      registeredDate: '2025-10-08',
-      distance: '2.5 km'
-    },
-    {
-      id: 'new2',
-      name: 'City Life Blood Bank',
-      location: 'East Zone',
-      registeredDate: '2025-10-05',
-      distance: '3.8 km'
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: hospital.name,
+    location: hospital.location,
+    city: hospital.city,
+    contactEmail: hospital.contactEmail,
+    contactPhone: hospital.contactPhone,
+    hospitalId: hospital.hospitalId,
+    description: 'Leading healthcare facility providing emergency medical services and blood transfusion support.',
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      toast.success('Profile updated successfully!', {
+        description: 'Your changes have been saved.'
+      });
+      setIsEditing(false);
+    } catch (error) {
+      toast.error('Failed to update profile', {
+        description: 'Please try again later.'
+      });
+    } finally {
+      setIsSaving(false);
     }
-  ];
+  };
+
+  const handleCancel = () => {
+    // Reset form to original data
+    setFormData({
+      name: hospital.name,
+      location: hospital.location,
+      city: hospital.city,
+      contactEmail: hospital.contactEmail,
+      contactPhone: hospital.contactPhone,
+      hospitalId: hospital.hospitalId,
+      description: 'Leading healthcare facility providing emergency medical services and blood transfusion support.',
+    });
+    setIsEditing(false);
+  };
 
   return (
     <HospitalLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-glow mb-3 flex items-center gap-3">
-            <Building2 className="h-10 w-10 text-primary" />
-            Hospital Profile
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Manage your hospital information and connections
-          </p>
-        </div>
-
-        {/* Hospital Information Card */}
-        <Card className="glass-card p-8 mb-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Hospital Logo/Icon */}
-            <div className="flex-shrink-0">
-              <div className="w-32 h-32 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-                <Building2 className="h-16 w-16 text-white" />
-              </div>
-            </div>
-
-            {/* Hospital Details */}
-            <div className="flex-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-3xl font-bold mb-2">{hospital.name}</h2>
-                  <Badge variant="success" className="text-sm">
-                    <Activity className="h-3 w-3 mr-1" />
-                    Active
-                  </Badge>
-                </div>
-                <Button variant="outline">Edit Profile</Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="font-semibold">{hospital.location}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Hospital ID</p>
-                    <p className="font-semibold">{hospital.hospitalId}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Contact</p>
-                    <p className="font-semibold">+1-555-HOSPITAL</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-destructive/20 rounded-full flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-destructive" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="font-semibold">info@citygeneralhospital.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Registered Since</p>
-                    <p className="font-semibold">January 2020</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                    <Award className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Certification</p>
-                    <p className="font-semibold">ISO 9001:2015</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="mb-6 md:mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-glow mb-2 md:mb-3 flex items-center gap-3">
+              <Building2 className="h-8 w-8 md:h-10 md:w-10 text-primary" />
+              Hospital Profile
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground">
+              Manage your hospital information
+            </p>
           </div>
-        </Card>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="glass-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Patients</p>
-                <p className="text-3xl font-bold mt-1">{hospital.patients.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-primary" />
+          {!isEditing ? (
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
             </div>
-          </Card>
-
-          <Card className="glass-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Blood Banks</p>
-                <p className="text-3xl font-bold mt-1">{connectedBloodBanks.length}</p>
-              </div>
-              <Building2 className="h-8 w-8 text-accent" />
-            </div>
-          </Card>
-
-          <Card className="glass-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Donors</p>
-                <p className="text-3xl font-bold mt-1">{hospital.totalDonorsConnected}</p>
-              </div>
-              <Users className="h-8 w-8 text-success" />
-            </div>
-          </Card>
-
-          <Card className="glass-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Units Received</p>
-                <p className="text-3xl font-bold mt-1">{hospital.totalBloodUnitsReceived}</p>
-              </div>
-              <Activity className="h-8 w-8 text-destructive" />
-            </div>
-          </Card>
+          )}
         </div>
 
-        {/* Tabs for Blood Banks */}
-        <Card className="glass-card p-6">
-          <Tabs defaultValue="connected" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="connected">
-                Connected Blood Banks ({connectedBloodBanks.length})
-              </TabsTrigger>
-              <TabsTrigger value="new">
-                Newly Registered ({newBloodBanks.length})
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Connected Blood Banks */}
-            <TabsContent value="connected">
-              <div className="space-y-4">
-                {connectedBloodBanks.map(bank => (
-                  <div
-                    key={bank.id}
-                    className="glass-card-primary p-5 rounded-lg border border-border/50 hover:border-primary/50 transition-all"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-accent/20 rounded-full flex items-center justify-center">
-                          <Building2 className="h-7 w-7 text-accent" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{bank.name}</h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {bank.location}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge variant="outline">
-                          <Award className="h-3 w-3 mr-1" />
-                          {bank.reputationScore}%
-                        </Badge>
-                        <Badge variant="success">Connected</Badge>
-                      </div>
+        <div className="grid gap-6 md:gap-8">
+          {/* Basic Information Card */}
+          <Card className="glass-card-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Basic Information
+              </CardTitle>
+              <CardDescription>
+                Core details about your hospital
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Hospital Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Hospital Name
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="h-11 border-2"
+                    />
+                  ) : (
+                    <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-transparent flex items-center">
+                      {formData.name}
                     </div>
+                  )}
+                </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Bank ID</p>
-                        <p className="font-semibold text-sm">{bank.bankId}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Blood Units</p>
-                        <p className="font-semibold text-sm">
-                          {bank.preservationList.reduce((sum, unit) => sum + unit.unitsAvailable, 0)} units
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Success Rate</p>
-                        <p className="font-semibold text-sm text-success">{bank.successRate}%</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Dispatches</p>
-                        <p className="font-semibold text-sm">{bank.sendRecords.length}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        View Details
-                      </Button>
-                      <Button size="sm" variant="default" className="flex-1">
-                        Request Blood
-                      </Button>
-                    </div>
+                {/* Hospital ID */}
+                <div className="space-y-2">
+                  <Label htmlFor="hospitalId" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Hospital ID
+                  </Label>
+                  <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-border/30 flex items-center text-muted-foreground">
+                    {formData.hospitalId} (Read-only)
                   </div>
-                ))}
+                </div>
+
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Location
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      className="h-11 border-2"
+                    />
+                  ) : (
+                    <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-transparent flex items-center">
+                      {formData.location}
+                    </div>
+                  )}
+                </div>
+
+                {/* City */}
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    City
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      className="h-11 border-2"
+                    />
+                  ) : (
+                    <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-transparent flex items-center">
+                      {formData.city}
+                    </div>
+                  )}
+                </div>
               </div>
-            </TabsContent>
 
-            {/* Newly Registered Blood Banks */}
-            <TabsContent value="new">
-              <div className="space-y-4">
-                {newBloodBanks.map(bank => (
-                  <div
-                    key={bank.id}
-                    className="glass-card-primary p-5 rounded-lg border border-border/50 hover:border-success/50 transition-all"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-success/20 rounded-full flex items-center justify-center">
-                          <Building2 className="h-7 w-7 text-success" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{bank.name}</h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {bank.location}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="success">
-                        <Activity className="h-3 w-3 mr-1 animate-pulse" />
-                        New
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Registered</p>
-                        <p className="font-semibold text-sm">
-                          {new Date(bank.registeredDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Distance</p>
-                        <p className="font-semibold text-sm">{bank.distance}</p>
-                      </div>
-                    </div>
-
-                    <Button size="sm" variant="default" className="w-full">
-                      Connect with Blood Bank
-                    </Button>
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Description
+                </Label>
+                {isEditing ? (
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    className="min-h-[100px] border-2"
+                    placeholder="Brief description about your hospital..."
+                  />
+                ) : (
+                  <div className="min-h-[100px] px-4 py-3 rounded-md bg-muted/30 border-2 border-transparent">
+                    {formData.description}
                   </div>
-                ))}
+                )}
               </div>
-            </TabsContent>
-          </Tabs>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Contact Information Card */}
+          <Card className="glass-card-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5 text-primary" />
+                Contact Information
+              </CardTitle>
+              <CardDescription>
+                How people can reach your hospital
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-primary" />
+                    Email Address
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.contactEmail}
+                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      className="h-11 border-2"
+                    />
+                  ) : (
+                    <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-transparent flex items-center">
+                      {formData.contactEmail}
+                    </div>
+                  )}
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary" />
+                    Phone Number
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="phone"
+                      value={formData.contactPhone}
+                      onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                      className="h-11 border-2"
+                    />
+                  ) : (
+                    <div className="h-11 px-4 py-2 rounded-md bg-muted/30 border-2 border-transparent flex items-center">
+                      {formData.contactPhone}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Statistics Card */}
+          <Card className="glass-card-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-primary" />
+                Hospital Statistics
+              </CardTitle>
+              <CardDescription>
+                Performance metrics (Read-only)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="text-2xl font-bold text-primary">
+                    {hospital.stats?.totalRequests || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Requests</div>
+                </div>
+                <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                  <div className="text-2xl font-bold text-green-600">
+                    {hospital.stats?.completedRequests || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Completed</div>
+                </div>
+                <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
+                  <div className="text-2xl font-bold text-destructive">
+                    {hospital.stats?.emergencyRequests || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Emergency Requests</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </HospitalLayout>
   );

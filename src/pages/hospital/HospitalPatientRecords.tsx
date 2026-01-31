@@ -43,9 +43,9 @@ const HospitalPatientRecords = () => {
   const filteredRecords = useMemo(() => {
     return bloodRecords.filter(record => {
       const matchesSearch = record.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           record.bloodBankName.toLowerCase().includes(searchQuery.toLowerCase());
+        record.bloodBankName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesBloodType = filterBloodType === 'all' || record.bloodGroup === filterBloodType;
-      
+
       return matchesSearch && matchesBloodType;
     });
   }, [bloodRecords, searchQuery, filterBloodType]);
@@ -61,14 +61,14 @@ const HospitalPatientRecords = () => {
 
   return (
     <HospitalLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-glow mb-3 flex items-center gap-3">
-            <FileText className="h-10 w-10 text-primary" />
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-glow mb-2 md:mb-3 flex items-center gap-3">
+            <FileText className="h-8 w-8 md:h-10 md:w-10 text-primary" />
             Patient Blood Records
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground">
             Real-time history of blood received by patients
           </p>
         </div>
@@ -176,8 +176,8 @@ const HospitalPatientRecords = () => {
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground">
-                {searchQuery || filterBloodType !== 'all' 
-                  ? 'No records match your filters' 
+                {searchQuery || filterBloodType !== 'all'
+                  ? 'No records match your filters'
                   : 'No blood records available yet'}
               </p>
             </div>
@@ -197,7 +197,7 @@ const HospitalPatientRecords = () => {
                 </thead>
                 <tbody>
                   {filteredRecords.map((record) => (
-                    <tr 
+                    <tr
                       key={record.id}
                       className="border-b border-border/30 hover:bg-muted/30 transition-colors"
                     >

@@ -21,7 +21,7 @@ const HospitalEmergency = () => {
   const { addNotification } = useNotifications();
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [bloodGroup, setBloodGroup] = useState('');
   const [unitsNeeded, setUnitsNeeded] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,14 +103,14 @@ const HospitalEmergency = () => {
 
   return (
     <HospitalLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-glow mb-3 flex items-center gap-3">
-            <AlertCircle className="h-10 w-10 text-destructive animate-pulse" />
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-glow mb-2 md:mb-3 flex items-center gap-3">
+            <AlertCircle className="h-8 w-8 md:h-10 md:w-10 text-destructive animate-pulse" />
             Emergency Blood Request
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground">
             Send urgent blood requests to all connected blood banks and donors
           </p>
         </div>
@@ -215,7 +215,7 @@ const HospitalEmergency = () => {
                         Urgent
                       </Badge>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       <div>
                         <p className="text-xs text-muted-foreground">Blood Type</p>

@@ -59,16 +59,16 @@ const DonorSidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 glass-card border-r border-red-500/20 flex flex-col z-50">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-50 shadow-xl">
       {/* Logo/Header */}
-      <div className="p-6 border-b border-red-500/20">
+      <div className="p-6 border-b border-gray-800 bg-gray-900">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
+          <div className="w-11 h-11 bg-gradient-to-br from-red-500 via-red-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/50">
             <Droplet className="h-6 w-6 text-white" fill="white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Drop Save</h2>
-            <p className="text-xs text-red-400">Donor Portal</p>
+            <h2 className="text-xl font-bold text-white">Vital Drop</h2>
+            <p className="text-xs text-gray-400">Donor Portal</p>
           </div>
         </div>
       </div>

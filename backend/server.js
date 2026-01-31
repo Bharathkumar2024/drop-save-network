@@ -12,6 +12,7 @@ import patientRoutes from './routes/patients.js';
 import emergencyRoutes from './routes/emergencies.js';
 import statsRoutes from './routes/stats.js';
 import seedRoutes from './routes/seed.js';
+import donationsRoutes from './routes/donations.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -20,7 +21,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // Allow multiple origins for CORS
-const allowedOrigins = process.env.CLIENT_URL 
+const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map(url => url.trim())
   : ['http://localhost:5173', 'http://localhost:8080'];
 
@@ -43,6 +44,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
+app.use('/certificates', express.static('certificates'));
 
 // Make io accessible to routes
 app.set('io', io);
@@ -50,7 +52,7 @@ app.set('io', io);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/donors', donorRoutes);
+app.use('/api/donors', donationsRoutes);
 app.use('/api/bloodbanks', bloodBankRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/emergencies', emergencyRoutes);

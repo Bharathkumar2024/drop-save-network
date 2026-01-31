@@ -11,12 +11,12 @@ const HospitalDashboardNew = () => {
   const hospital = mockHospitals[0];
 
   // Calculate statistics
-  const patientsNeedingBlood = useMemo(() => 
+  const patientsNeedingBlood = useMemo(() =>
     hospital.patients.filter(p => p.status === 'requesting'),
     [hospital.patients]
   );
-  
-  const patientsReceived = useMemo(() => 
+
+  const patientsReceived = useMemo(() =>
     hospital.patients.filter(p => p.status === 'received'),
     [hospital.patients]
   );
@@ -37,24 +37,26 @@ const HospitalDashboardNew = () => {
 
   return (
     <HospitalLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
         {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-glow mb-3">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-glow mb-2 md:mb-3">
             Welcome to {hospital.name}
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground">
             Managing blood donation and patient care with excellence
           </p>
         </div>
 
         {/* Advertisement Carousel */}
-        <AdvertisementCarousel
-          hospitalName={hospital.name}
-          hospitalBio="Providing world-class healthcare services with state-of-the-art facilities and dedicated medical professionals. Committed to saving lives through efficient blood management."
-          connectedBloodBanks={connectedBloodBanks}
-          patientsNeedingBlood={patientsNeedingBlood.length}
-        />
+        <div className="mb-6 md:mb-8">
+          <AdvertisementCarousel
+            hospitalName={hospital.name}
+            hospitalBio="Providing world-class healthcare services with state-of-the-art facilities and dedicated medical professionals. Committed to saving lives through efficient blood management."
+            connectedBloodBanks={connectedBloodBanks}
+            patientsNeedingBlood={patientsNeedingBlood.length}
+          />
+        </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
@@ -180,10 +182,10 @@ const HospitalDashboardNew = () => {
                 <XAxis dataKey="day" />
                 <YAxis />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="fulfilled" 
-                  stroke="#22C55E" 
+                <Line
+                  type="monotone"
+                  dataKey="fulfilled"
+                  stroke="#22C55E"
                   strokeWidth={3}
                   dot={{ fill: '#22C55E', r: 5 }}
                 />
